@@ -100,10 +100,14 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
         setImages(imgs);
         setProfiles(fpProfiles || []);
         if (imgs.length > 0) {
-          const first = imgs[0];
-          setApiLevel(first.api_level);
-          setAbi(first.abi);
-          setTag(first.tag);
+          // Prefer google_apis + x86_64, highest API first
+          const preferred = imgs.find(i => i.tag === 'google_apis' && i.abi === 'x86_64')
+            || imgs.find(i => i.tag === 'google_apis')
+            || imgs.find(i => i.abi === 'x86_64')
+            || imgs[0];
+          setApiLevel(preferred.api_level);
+          setAbi(preferred.abi);
+          setTag(preferred.tag);
         }
       })
       .catch((e: any) => setError(e?.message ?? String(e)))
@@ -119,16 +123,30 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
 
   const abis = useMemo(() => {
     if (apiLevel === null) return [];
-    return [...new Set(
+    const list = [...new Set(
       images.filter((img) => img.api_level === apiLevel).map((img) => img.abi)
     )];
+    // x86_64 first
+    list.sort((a, b) => {
+      if (a === 'x86_64') return -1;
+      if (b === 'x86_64') return 1;
+      return a.localeCompare(b);
+    });
+    return list;
   }, [images, apiLevel]);
 
   const tags = useMemo(() => {
     if (apiLevel === null || !abi) return [];
-    return [...new Set(
+    const list = [...new Set(
       images.filter((img) => img.api_level === apiLevel && img.abi === abi).map((img) => img.tag)
     )];
+    // google_apis first
+    list.sort((a, b) => {
+      if (a === 'google_apis') return -1;
+      if (b === 'google_apis') return 1;
+      return a.localeCompare(b);
+    });
+    return list;
   }, [images, apiLevel, abi]);
 
   const currentDescription = useMemo(() => {
