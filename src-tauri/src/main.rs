@@ -10,6 +10,7 @@ mod fingerprint;
 mod extras;
 mod api_server;
 mod set_proxy;
+mod bypass;
 
 use config::Config;
 use device::{Device, DeviceStore};
@@ -642,6 +643,21 @@ fn set_sdk_path(config: tauri::State<Config>, config_path_state: tauri::State<Pa
     Ok(())
 }
 
+#[tauri::command]
+fn bypass_detection(
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+) -> Result<String, String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    if dev.status != "running" {
+        return Err("Device must be running".into());
+    }
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let serial = format!("emulator-{}", dev.port);
+    bypass::bypass_detection(&sdk_path, &serial)
+}
+
 fn main() {
     let config_path = PathBuf::from("config.json");
     let mut cfg = config::load(&config_path);
@@ -715,6 +731,7 @@ fn main() {
             list_snapshots_cmd,
             delete_snapshot_cmd,
             toggle_root,
+            bypass_detection,
         ])
         .run(tauri::generate_context!())
         .expect("error while running enmulator");
