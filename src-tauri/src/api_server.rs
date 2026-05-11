@@ -31,6 +31,8 @@ pub struct CreateDeviceRequest {
     pub name: String,
     pub profile: Option<String>,
     pub api_level: u8,
+    pub abi: Option<String>,
+    pub tag: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -69,12 +71,16 @@ async fn create_device(
     };
     let profile = body.profile.clone().unwrap_or_else(|| "pixel_5".to_string());
     let device_id = body.name.to_lowercase().replace(' ', "_");
+    let abi = body.abi.clone().unwrap_or_else(|| "x86_64".to_string());
+    let tag = body.tag.clone().unwrap_or_else(|| "google_apis".to_string());
 
     match avd_manager::create_avd(
         &sdk_path,
         &device_id,
         &body.name,
         body.api_level,
+        &abi,
+        &tag,
         &profile,
         &state.device_store.devices_dir,
     ) {

@@ -8,6 +8,8 @@ pub fn create_avd(
     device_id: &str,
     display_name: &str,
     api_level: u8,
+    abi: &str,
+    tag: &str,
     device_definition: &str,
     devices_dir: &PathBuf,
 ) -> Result<Device, String> {
@@ -15,8 +17,7 @@ pub fn create_avd(
     let avd_path = devices_dir.join(device_id);
     let avdmanager = sdk::get_avdmanager_path(sdk_path);
 
-    let tag = "google_apis";
-    let package = format!("system-images;android-{};{};x86_64", api_level, tag);
+    let package = format!("system-images;android-{};{};{}", api_level, tag, abi);
 
     let output = Command::new(&avdmanager)
         .args([
@@ -24,7 +25,7 @@ pub fn create_avd(
             "--name", &avd_name,
             "--package", &package,
             "--tag", tag,
-            "--abi", "x86_64",
+            "--abi", abi,
             "--device", device_definition,
             "--path", avd_path.to_str().unwrap_or("/tmp"),
         ])

@@ -1,4 +1,14 @@
+use serde::Serialize;
 use std::path::PathBuf;
+use std::process::Command;
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SystemImage {
+    pub api_level: u8,
+    pub abi: String,
+    pub tag: String,
+    pub description: String,
+}
 
 pub fn detect_sdk() -> Option<PathBuf> {
     for var in &["ANDROID_HOME", "ANDROID_SDK_ROOT"] {
@@ -37,4 +47,100 @@ pub fn get_adb_path(sdk: &PathBuf) -> PathBuf {
 
 pub fn get_sdkmanager_path(sdk: &PathBuf) -> PathBuf {
     sdk.join("cmdline-tools/latest/bin/sdkmanager")
+}
+
+pub fn get_ramdisk_path(sdk: &PathBuf, api_level: u8, tag: &str, abi: &str) -> PathBuf {
+    sdk.join("system-images")
+        .join(format!("android-{}", api_level))
+        .join(tag)
+        .join(abi)
+        .join("ramdisk.img")
+}
+
+/// Calls `sdkmanager --list` and parses available system images.
+/// Returns Vec<SystemImage> with api_level, abi, tag, and description.
+pub fn list_available_images(sdk_path: &PathBuf) -> Result<Vec<SystemImage>, String> {
+    let sdkmanager = get_sdkmanager_path(sdk_path);
+    let output = Command::new(&sdkmanager)
+        .args(["--list"])
+        .output()
+        .map_err(|e| format!("sdkmanager error: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut images = Vec::new();
+
+    for line in stdout.lines() {
+        let trimmed = line.trim();
+        // Lines look like:
+        //   system-images;android-34;google_apis;x86_64    | 14 | Google APIs Intel x86_64 Atom System Image
+        if !trimmed.starts_with("system-images;android-") {
+            continue;
+        }
+        // Split on the first '|' to separate package path from description
+        let parts: Vec<&str> = trimmed.splitn(2, '|').collect();
+        if parts.is_empty() {
+            continue;
+        }
+        let package_path = parts[0].trim();
+        let description = if parts.len() > 1 {
+            parts[1].trim().to_string()
+        } else {
+            String::new()
+        };
+
+        // Parse: system-images;android-{api};{tag};{abi}
+        let segments: Vec<&str> = package_path.split(';').collect();
+        if segments.len() < 4 {
+            continue;
+        }
+        // segments[0] = "system-images"
+        // segments[1] = "android-34"
+        // segments[2] = "google_apis" (tag)
+        // segments[3] = "x86_64" (abi)
+        let api_str = segments[1].strip_prefix("android-").unwrap_or(segments[1]);
+        let api_level: u8 = match api_str.parse() {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        let tag = segments[2].to_string();
+        let abi = segments[3].to_string();
+
+        images.push(SystemImage {
+            api_level,
+            abi,
+            tag,
+            description,
+        });
+    }
+
+    // Sort by API level descending, then ABI, then tag
+    images.sort_by(|a, b| {
+        b.api_level
+            .cmp(&a.api_level)
+            .then_with(|| a.abi.cmp(&b.abi))
+            .then_with(|| a.tag.cmp(&b.tag))
+    });
+    images.dedup_by(|a, b| a.api_level == b.api_level && a.abi == b.abi && a.tag == b.tag);
+
+    Ok(images)
+}
+
+/// Installs a system image package via sdkmanager.
+/// The package should be in the format: "system-images;android-{api};{tag};{abi}"
+pub fn install_system_image(sdk_path: &PathBuf, package: &str) -> Result<(), String> {
+    let sdkmanager = get_sdkmanager_path(sdk_path);
+    let output = Command::new(&sdkmanager)
+        .args(["--install", package])
+        .output()
+        .map_err(|e| format!("sdkmanager install error: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        // "already installed" is not an error
+        if stderr.to_lowercase().contains("already installed") {
+            return Ok(());
+        }
+        return Err(stderr.to_string());
+    }
+    Ok(())
 }
