@@ -1,0 +1,11 @@
+/Users/engin/Code/enmulator/src-tauri/target/debug/deps/tauri_runtime-728f72fb8a2a8b32.d: /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/lib.rs /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/dpi.rs /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/monitor.rs /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/webview.rs /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/window.rs
+
+/Users/engin/Code/enmulator/src-tauri/target/debug/deps/libtauri_runtime-728f72fb8a2a8b32.rlib: /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/lib.rs /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/dpi.rs /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/monitor.rs /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/webview.rs /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/window.rs
+
+/Users/engin/Code/enmulator/src-tauri/target/debug/deps/libtauri_runtime-728f72fb8a2a8b32.rmeta: /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/lib.rs /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/dpi.rs /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/monitor.rs /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/webview.rs /Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/window.rs
+
+/Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/lib.rs:
+/Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/dpi.rs:
+/Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/monitor.rs:
+/Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/webview.rs:
+/Users/engin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-runtime-2.11.1/src/window.rs:
