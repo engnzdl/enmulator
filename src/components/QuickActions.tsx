@@ -60,14 +60,11 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
         <button
           className={stateClass('shell')}
           onClick={async () => {
-            console.log('Shell clicked, invoking adb_shell...');
             mark('shell', 'loading');
             try {
-              const r = await invoke('adb_shell', { id: device_id, cmd: 'id' });
-              console.log('adb_shell result:', r);
+              await invoke('adb_shell', { id: device_id, cmd: 'id' });
               mark('shell', 'done');
-            } catch(e: any) {
-              console.error('adb_shell error:', e?.message ?? e, e);
+            } catch {
               mark('shell', 'idle');
             }
           }}
