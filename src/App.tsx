@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import DeviceCard, { Device } from './components/DeviceCard';
 import CreateWizard from './components/CreateWizard';
 import QuickActions from './components/QuickActions';
+import ProxyCard from './components/ProxyCard';
 import FileExplorer from './components/FileExplorer';
 import SnapshotPanel from './components/SnapshotPanel';
 
@@ -279,6 +280,15 @@ export default function App() {
                   onOpenSnapshots={() => setSnapshotDeviceId(selectedDevice.id)}
                   rootEnabled={selectedDevice.root_enabled}
                   onRootToggle={() => handleRootToggle(selectedDevice.id)}
+                />
+              </div>
+
+              {/* Proxy Section */}
+              <div className="panel-section">
+                <div className="panel-section-title">Proxy</div>
+                <ProxyCard
+                  device_id={selectedDevice.id}
+                  rootEnabled={selectedDevice.root_enabled}
                 />
               </div>
 
