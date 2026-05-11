@@ -269,8 +269,8 @@ body {
 
 .device-card {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
   padding: 10px 12px;
   background: transparent;
   border: 1px solid transparent;
@@ -278,6 +278,19 @@ body {
   cursor: pointer;
   transition: all var(--transition-normal);
   position: relative;
+}
+
+.device-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.device-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  justify-content: flex-end;
 }
 
 .device-card:hover {
