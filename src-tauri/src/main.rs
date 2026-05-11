@@ -49,6 +49,7 @@ fn list_available_images_cmd(config: tauri::State<Config>) -> Result<Vec<SystemI
     let sdk_path = PathBuf::from(
         config.sdk_path.as_ref().ok_or("SDK not configured")?
     );
+    sdk::check_sdk_tools(&sdk_path)?;
     sdk::list_available_images(&sdk_path)
 }
 
@@ -57,6 +58,7 @@ fn install_system_image_cmd(config: tauri::State<Config>, package: String) -> Re
     let sdk_path = PathBuf::from(
         config.sdk_path.as_ref().ok_or("SDK not configured")?
     );
+    sdk::check_sdk_tools(&sdk_path)?;
     sdk::install_system_image(&sdk_path, &package)
 }
 
@@ -79,6 +81,7 @@ fn create_device(
     let sdk_path = PathBuf::from(
         config.sdk_path.as_ref().ok_or("SDK not configured")?
     );
+    sdk::check_sdk_tools(&sdk_path)?;
     let dev = avd_manager::create_avd(
         &sdk_path, &name, &name, api_level, &abi, &tag, &profile, &store.devices_dir,
     )?;
@@ -589,6 +592,7 @@ fn list_device_templates(config: tauri::State<Config>) -> Result<Vec<String>, St
     let sdk_path = PathBuf::from(
         config.sdk_path.as_ref().ok_or("SDK not configured")?
     );
+    sdk::check_sdk_tools(&sdk_path)?;
     avd_manager::list_device_definitions(&sdk_path)
 }
 
