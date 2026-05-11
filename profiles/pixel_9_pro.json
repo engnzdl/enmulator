@@ -1,0 +1,11 @@
+{
+  "name": "Pixel 9 Pro",
+  "brand": "google",
+  "model": "Pixel 9 Pro",
+  "manufacturer": "Google",
+  "device": "caiman",
+  "fingerprint": "google/caiman/caiman:15/AP4A.241205.013/12768715:user/release-keys",
+  "dpi": 420,
+  "resolution_w": 1280,
+  "resolution_h": 2856
+}

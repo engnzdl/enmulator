@@ -1,0 +1,11 @@
+{
+  "name": "Samsung A55",
+  "brand": "samsung",
+  "model": "SM-A556B",
+  "manufacturer": "samsung",
+  "device": "a55x",
+  "fingerprint": "samsung/a55xxx/a55x:14/UP1A.231005.007/A556BXXU4BXJ1:user/release-keys",
+  "dpi": 390,
+  "resolution_w": 1080,
+  "resolution_h": 2340
+}

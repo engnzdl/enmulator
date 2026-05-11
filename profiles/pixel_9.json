@@ -1,0 +1,11 @@
+{
+  "name": "Pixel 9",
+  "brand": "google",
+  "model": "Pixel 9",
+  "manufacturer": "Google",
+  "device": "tokay",
+  "fingerprint": "google/tokay/tokay:15/AP4A.241205.013/12768715:user/release-keys",
+  "dpi": 420,
+  "resolution_w": 1080,
+  "resolution_h": 2424
+}
