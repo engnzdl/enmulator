@@ -73,6 +73,12 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
     setSelectedProfile('');
     setLoading(true);
 
+    // Generate random device name
+    const adjectives = ['Alpha', 'Beta', 'Delta', 'Gamma', 'Neo', 'Optima', 'Prime', 'Quantum', 'Swift', 'Ultra'];
+    const nouns = ['Device', 'Emu', 'Instance', 'Lab', 'Node', 'Runner', 'Sandbox', 'Station', 'Test', 'VM'];
+    const rand = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+    setName(`${rand(adjectives)} ${rand(nouns)}`);
+
     Promise.all([
       invoke<SystemImage[]>('list_available_images_cmd'),
       invoke<FingerprintProfile[]>('list_profiles').catch(() => [] as FingerprintProfile[]),
