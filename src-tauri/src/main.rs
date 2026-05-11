@@ -16,9 +16,20 @@ use device::{Device, DeviceStore};
 use emulator::EmulatorStore;
 use extras::RecordingStore;
 use fingerprint::FingerprintProfile;
+use serde::Serialize;
 use set_proxy::{ProxyConfig, ProxyStore};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+
+// ── File Explorer ──
+
+#[derive(Debug, Clone, Serialize)]
+struct FileEntry {
+    name: String,
+    is_dir: bool,
+    size: u64,
+    permissions: String,
+}
 
 // ── SDK ──
 #[tauri::command]
@@ -302,6 +313,59 @@ fn stop_api_server() -> Result<String, String> {
     Ok("API server stopped".to_string())
 }
 
+// ── File Explorer ──
+
+#[tauri::command]
+fn list_files(config: tauri::State<Config>, store: tauri::State<Arc<DeviceStore>>, id: String, path: String) -> Result<Vec<FileEntry>, String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    let serial = format!("emulator-{}", dev.port);
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let output = adb_bridge::shell(&sdk_path, &serial, &format!("ls -la {}", path))?;
+    let mut entries = Vec::new();
+    for line in output.lines() {
+        // Skip "total" line
+        if line.starts_with("total ") {
+            continue;
+        }
+        // Skip empty lines
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        // Parse: drwxr-xr-x  2 root root 4096 2024-01-01 12:00 name
+        // or:     -rw-r--r--  1 root root  123 2024-01-01 12:00 name
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() < 9 {
+            continue;
+        }
+        let perms = parts[0].to_string();
+        let is_dir = perms.starts_with('d');
+        // Size is the 5th column (0-indexed: 4)
+        let size: u64 = parts[4].parse().unwrap_or(0);
+        // Name starts at column 8, but may contain spaces if it's the last field
+        // Reconstruct name from columns 8+
+        let name = parts[8..].join(" ");
+        entries.push(FileEntry { name, is_dir, size, permissions: perms });
+    }
+    Ok(entries)
+}
+
+#[tauri::command]
+fn pull_file(config: tauri::State<Config>, store: tauri::State<Arc<DeviceStore>>, id: String, remote_path: String, local_path: String) -> Result<(), String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    let serial = format!("emulator-{}", dev.port);
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    adb_bridge::pull(&sdk_path, &serial, &remote_path, &local_path)
+}
+
+#[tauri::command]
+fn push_file(config: tauri::State<Config>, store: tauri::State<Arc<DeviceStore>>, id: String, local_path: String, remote_path: String) -> Result<(), String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    let serial = format!("emulator-{}", dev.port);
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    adb_bridge::push(&sdk_path, &serial, &local_path, &remote_path)
+}
+
 // ── Config ──
 #[tauri::command]
 fn get_config(config: tauri::State<Config>) -> Config {
@@ -333,6 +397,7 @@ fn main() {
     });
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .manage(cfg)
         .manage(config_path)
         .manage(store)
@@ -363,6 +428,9 @@ fn main() {
             stop_api_server,
             get_config,
             set_sdk_path,
+            list_files,
+            pull_file,
+            push_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running enmulator");
