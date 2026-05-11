@@ -80,10 +80,14 @@ export default function App() {
   };
 
   const handleClone = async (id: string) => {
-    const name = prompt('Clone name?');
+    const name = window.prompt('Clone name?');
     if (name) {
-      await invoke('clone_device', { sourceId: id, targetName: name });
-      await loadDevices();
+      try {
+        await invoke('clone_device', { sourceId: id, targetName: name });
+        await loadDevices();
+      } catch (e) {
+        console.error('clone failed:', e);
+      }
     }
   };
 
