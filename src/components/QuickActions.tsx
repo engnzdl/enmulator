@@ -146,11 +146,19 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
               onRootToggle();
               setTimeout(() => mark('root', 'done'), 2000);
             }}
-            title={rootEnabled ? 'Unroot device' : 'Root device (via rootAVD)'}
+            title={rootEnabled ? 'Unroot device' : 'Root device (adb root)'}
           >
             <span className="qa-btn-icon">{rootEnabled ? '🔓' : '🔒'}</span> {rootEnabled ? 'Unroot' : 'Root'}
           </button>
         )}
+
+        <button
+          className={`qa-btn${states['bypass'] === 'loading' ? ' loading' : ''}${states['bypass'] === 'done' ? ' done' : ''}`}
+          onClick={() => act('bypass', 'bypass_detection', { id: device_id })}
+          title="Hide emulator detection (build.props)"
+        >
+          <span className="qa-btn-icon">🛡️</span> Bypass
+        </button>
       </div>
 
       {/* Proxy inline inputs + toggle */}
