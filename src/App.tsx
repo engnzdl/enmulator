@@ -4,6 +4,7 @@ import DeviceCard, { Device } from './components/DeviceCard';
 import CreateWizard from './components/CreateWizard';
 import QuickActions from './components/QuickActions';
 import ProxyCard from './components/ProxyCard';
+import LogcatPanel from './components/LogcatPanel';
 import FileExplorer from './components/FileExplorer';
 interface BatchResult {
   success: string[];
@@ -293,6 +294,15 @@ export default function App() {
                 <ProxyCard
                   device_id={selectedDevice.id}
                   rootEnabled={selectedDevice.root_enabled}
+                />
+              </div>
+
+              {/* Logcat Section */}
+              <div className="panel-section">
+                <div className="panel-section-title">Live Log</div>
+                <LogcatPanel
+                  device_id={selectedDevice.id}
+                  deviceStatus={selectedDevice.status}
                 />
               </div>
             </div>
