@@ -23,10 +23,11 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
   const act = async (key: string, cmd: string, args?: Record<string, unknown>) => {
     mark(key, 'loading');
     try {
-      await invoke(cmd, { id: device_id, ...args });
+      const result = await invoke(cmd, { id: device_id, ...args });
+      console.log(`[${cmd}]`, result);
       mark(key, 'done');
-    } catch (e) {
-      console.error(`${cmd} failed:`, e);
+    } catch (e: any) {
+      console.error(`[${cmd}] failed:`, e?.message ?? e);
       mark(key, 'idle');
     }
   };
