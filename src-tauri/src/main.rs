@@ -9,12 +9,14 @@ mod adb_bridge;
 mod fingerprint;
 mod extras;
 mod api_server;
+mod set_proxy;
 
 use config::Config;
 use device::{Device, DeviceStore};
 use emulator::EmulatorStore;
 use extras::RecordingStore;
 use fingerprint::FingerprintProfile;
+use set_proxy::{ProxyConfig, ProxyStore};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
@@ -153,6 +155,43 @@ fn install_apk(config: tauri::State<Config>, store: tauri::State<Arc<DeviceStore
     adb_bridge::install_apk(&sdk_path, &serial, &apk_path)
 }
 
+// ── Proxy ──
+#[tauri::command]
+fn set_device_proxy(
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    proxy_store: tauri::State<Arc<ProxyStore>>,
+    id: String,
+    host: String,
+    port: u16,
+    enabled: bool,
+) -> Result<(), String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    if dev.status != "running" {
+        return Err("Device must be running to set proxy".into());
+    }
+    let serial = format!("emulator-{}", dev.port);
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+
+    if enabled {
+        let proxy_cmd = format!("{}:{}", host, port);
+        adb_bridge::shell(&sdk_path, &serial, &format!("settings put global http_proxy {}", proxy_cmd))?;
+        proxy_store.set(&id, ProxyConfig { host: host.clone(), port, enabled: true });
+    } else {
+        adb_bridge::shell(&sdk_path, &serial, "settings put global http_proxy :0")?;
+        proxy_store.remove(&id);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn enable_proxy(
+    proxy_store: tauri::State<Arc<ProxyStore>>,
+    id: String,
+) -> Result<Option<ProxyConfig>, String> {
+    Ok(proxy_store.get(&id))
+}
+
 // ── Profiles ──
 #[tauri::command]
 fn list_profiles() -> Vec<FingerprintProfile> {
@@ -285,6 +324,7 @@ fn main() {
     let store = Arc::new(DeviceStore::new(devices_dir));
     let emu_store = Arc::new(EmulatorStore::new());
     let rec_store = Arc::new(RecordingStore::new());
+    let proxy_store = Arc::new(ProxyStore::new());
 
     let api_state = Arc::new(api_server::AppState {
         device_store: store.clone(),
@@ -299,6 +339,7 @@ fn main() {
         .manage(emu_store)
         .manage(rec_store)
         .manage(api_state)
+        .manage(proxy_store)
         .invoke_handler(tauri::generate_handler![
             detect_sdk_cmd,
             list_devices,
@@ -309,6 +350,8 @@ fn main() {
             stop_device,
             adb_shell,
             install_apk,
+            set_device_proxy,
+            enable_proxy,
             list_profiles,
             apply_profile,
             start_screen_record,
