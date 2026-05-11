@@ -168,36 +168,17 @@ fn start_device(
 ) -> Result<u16, String> {
     let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
     let dev = store.get(&id).ok_or("Device not found")?;
-    let port = emu_store.start(&sdk_path, &dev.avd_name, headless)?;
+
+    // Load fingerprint profile for identity props at launch
+    let profile = dev.fingerprint_profile.as_ref().and_then(|name| {
+        fingerprint::list_profiles(&PathBuf::from("../profiles"))
+            .into_iter()
+            .find(|p| &p.name == name)
+    });
+
+    let port = emu_store.start(&sdk_path, &dev.avd_name, headless, profile.as_ref())?;
     store.update_port(&id, port);
     store.update_status(&id, "running");
-
-    // Auto-apply fingerprint profile identity after boot
-    let fp_name = dev.fingerprint_profile.clone();
-    if let Some(profile_name) = fp_name {
-        let sdk = sdk_path.clone();
-        std::thread::spawn(move || {
-            let serial = format!("emulator-{}", port);
-            // Wait for boot (max 90s)
-            for _ in 0..45 {
-                if let Ok(output) = std::process::Command::new(sdk.join("platform-tools/adb"))
-                    .args(["-s", &serial, "shell", "getprop", "sys.boot_completed"])
-                    .output()
-                {
-                    if String::from_utf8_lossy(&output.stdout).trim() == "1" {
-                        break;
-                    }
-                }
-                std::thread::sleep(std::time::Duration::from_secs(2));
-            }
-            // Apply profile
-            let profiles = fingerprint::list_profiles(&PathBuf::from("../profiles"));
-            if let Some(profile) = profiles.into_iter().find(|p| p.name == profile_name) {
-                let _ = fingerprint::apply_to_device(&sdk, &serial, &profile);
-            }
-        });
-    }
-
     Ok(port)
 }
 
@@ -593,7 +574,7 @@ async fn batch_start(
             result.failed.push(BatchFailure { id: id.clone(), error: "Already running".into() });
             continue;
         }
-        match emu_store.start(&sdk_path, &dev.avd_name, false) {
+        match emu_store.start(&sdk_path, &dev.avd_name, false, None) {
             Ok(port) => {
                 store.update_port(id, port);
                 store.update_status(id, "running");

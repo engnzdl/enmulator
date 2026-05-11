@@ -112,7 +112,7 @@ async fn start_device(
         Some(d) => d,
         None => return not_found("Device not found"),
     };
-    match state.emulator_store.start(&sdk_path, &dev.avd_name, true) {
+    match state.emulator_store.start(&sdk_path, &dev.avd_name, true, None) {
         Ok(port) => {
             state.device_store.update_port(&id, port);
             state.device_store.update_status(&id, "running");
