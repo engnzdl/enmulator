@@ -205,3 +205,91 @@ button:disabled {
   font-size: 0.85rem;
   margin-bottom: 8px;
 }
+
+/* ── Quick Actions ── */
+
+.quick-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.qa-btn {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  background: #2d2d5e;
+  color: #ccc;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.qa-btn:hover {
+  background: #3d3d7e;
+  color: #fff;
+}
+
+.qa-btn.loading {
+  opacity: 0.6;
+  cursor: wait;
+  border-color: #facc15;
+}
+
+.qa-btn.done {
+  border-color: #4caf50;
+  background: #1b3a1b;
+  color: #4caf50;
+}
+
+/* ── Bottom Toolbar ── */
+
+.toolbar {
+  margin-top: 32px;
+  padding: 20px 24px;
+  background: #0f1629;
+  border-radius: 12px;
+  border: 1px solid #2d2d5e;
+}
+
+.toolbar-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin-bottom: 16px;
+}
+
+.toolbar .quick-actions {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #1c2c50;
+}
+
+.toolbar .quick-actions:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+/* ── Drag & Drop ── */
+
+.device-card.drag-over {
+  outline: 2px dashed #4f46e5;
+  outline-offset: -4px;
+  background: #1e2d52;
+}
+
+.drop-hint {
+  font-size: 0.78rem;
+  color: #818cf8;
+  margin-top: 4px;
+  padding-left: 18px;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}

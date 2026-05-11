@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import DeviceCard, { Device } from './components/DeviceCard';
 import CreateWizard from './components/CreateWizard';
+import QuickActions from './components/QuickActions';
 
 export default function App() {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -41,6 +42,16 @@ export default function App() {
     }
   };
 
+  const handleDropApk = async (id: string, apkPath: string) => {
+    try {
+      console.log(`Installing APK: ${apkPath} on device ${id}`);
+      await invoke('install_apk', { id, apkPath });
+      await loadDevices();
+    } catch (e) {
+      console.error('Failed to install APK:', e);
+    }
+  };
+
   const handleCreate = async () => {
     setWizardOpen(false);
     await loadDevices();
@@ -67,10 +78,20 @@ export default function App() {
               onStop={handleStop}
               onDelete={handleDelete}
               onClone={handleClone}
+              onDropApk={handleDropApk}
             />
           ))
         )}
       </main>
+
+      {devices.length > 0 && (
+        <footer className="toolbar">
+          <h2 className="toolbar-title">Quick Actions</h2>
+          {devices.map((d) => (
+            <QuickActions key={d.id} device_id={d.id} />
+          ))}
+        </footer>
+      )}
 
       <CreateWizard
         isOpen={wizardOpen}
