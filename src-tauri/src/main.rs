@@ -583,6 +583,15 @@ fn toggle_root(
     }
 }
 
+// ── Device Templates ──
+#[tauri::command]
+fn list_device_templates(config: tauri::State<Config>) -> Result<Vec<String>, String> {
+    let sdk_path = PathBuf::from(
+        config.sdk_path.as_ref().ok_or("SDK not configured")?
+    );
+    avd_manager::list_device_definitions(&sdk_path)
+}
+
 // ── Config ──
 #[tauri::command]
 fn get_config(config: tauri::State<Config>) -> Config {
@@ -599,7 +608,16 @@ fn set_sdk_path(config: tauri::State<Config>, config_path_state: tauri::State<Pa
 
 fn main() {
     let config_path = PathBuf::from("config.json");
-    let cfg = config::load(&config_path);
+    let mut cfg = config::load(&config_path);
+
+    // Auto-detect SDK on first run if not already configured
+    if cfg.sdk_path.is_none() {
+        if let Some(detected) = sdk::detect_sdk() {
+            cfg.sdk_path = Some(detected.to_string_lossy().to_string());
+            config::save(&config_path, &cfg);
+        }
+    }
+
     let devices_dir = PathBuf::from(&cfg.devices_dir);
 
     let store = Arc::new(DeviceStore::new(devices_dir));
@@ -650,6 +668,7 @@ fn main() {
             stop_api_server,
             get_config,
             set_sdk_path,
+            list_device_templates,
             list_files,
             pull_file,
             push_file,
