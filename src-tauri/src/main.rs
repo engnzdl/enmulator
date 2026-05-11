@@ -171,6 +171,33 @@ fn start_device(
     let port = emu_store.start(&sdk_path, &dev.avd_name, headless)?;
     store.update_port(&id, port);
     store.update_status(&id, "running");
+
+    // Auto-apply fingerprint profile identity after boot
+    let fp_name = dev.fingerprint_profile.clone();
+    if let Some(profile_name) = fp_name {
+        let sdk = sdk_path.clone();
+        std::thread::spawn(move || {
+            let serial = format!("emulator-{}", port);
+            // Wait for boot (max 90s)
+            for _ in 0..45 {
+                if let Ok(output) = std::process::Command::new(sdk.join("platform-tools/adb"))
+                    .args(["-s", &serial, "shell", "getprop", "sys.boot_completed"])
+                    .output()
+                {
+                    if String::from_utf8_lossy(&output.stdout).trim() == "1" {
+                        break;
+                    }
+                }
+                std::thread::sleep(std::time::Duration::from_secs(2));
+            }
+            // Apply profile
+            let profiles = fingerprint::list_profiles(&PathBuf::from("../profiles"));
+            if let Some(profile) = profiles.into_iter().find(|p| p.name == profile_name) {
+                let _ = fingerprint::apply_to_device(&sdk, &serial, &profile);
+            }
+        });
+    }
+
     Ok(port)
 }
 
