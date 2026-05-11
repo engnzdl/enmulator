@@ -384,13 +384,7 @@ body {
 .device-actions {
   display: flex;
   gap: 4px;
-  opacity: 0;
-  transition: opacity var(--transition-fast);
   flex-shrink: 0;
-}
-
-.device-card:hover .device-actions {
-  opacity: 1;
 }
 
 .device-action-btn {
