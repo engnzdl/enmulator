@@ -10,12 +10,14 @@ mod fingerprint;
 mod extras;
 mod api_server;
 mod set_proxy;
+mod rootavd;
 
 use config::Config;
 use device::{Device, DeviceStore};
 use emulator::EmulatorStore;
 use extras::RecordingStore;
 use fingerprint::FingerprintProfile;
+use sdk::SystemImage;
 use serde::Serialize;
 use set_proxy::{ProxyConfig, ProxyStore};
 use std::path::PathBuf;
@@ -42,6 +44,22 @@ fn detect_sdk_cmd(config: tauri::State<Config>) -> Result<String, String> {
         .ok_or("SDK not found".into())
 }
 
+#[tauri::command]
+fn list_available_images_cmd(config: tauri::State<Config>) -> Result<Vec<SystemImage>, String> {
+    let sdk_path = PathBuf::from(
+        config.sdk_path.as_ref().ok_or("SDK not configured")?
+    );
+    sdk::list_available_images(&sdk_path)
+}
+
+#[tauri::command]
+fn install_system_image_cmd(config: tauri::State<Config>, package: String) -> Result<(), String> {
+    let sdk_path = PathBuf::from(
+        config.sdk_path.as_ref().ok_or("SDK not configured")?
+    );
+    sdk::install_system_image(&sdk_path, &package)
+}
+
 // ── Device CRUD ──
 #[tauri::command]
 fn list_devices(store: tauri::State<Arc<DeviceStore>>) -> Vec<Device> {
@@ -55,12 +73,14 @@ fn create_device(
     name: String,
     profile: String,
     api_level: u8,
+    abi: String,
+    tag: String,
 ) -> Result<Device, String> {
     let sdk_path = PathBuf::from(
         config.sdk_path.as_ref().ok_or("SDK not configured")?
     );
     let dev = avd_manager::create_avd(
-        &sdk_path, &name, &name, api_level, &profile, &store.devices_dir,
+        &sdk_path, &name, &name, api_level, &abi, &tag, &profile, &store.devices_dir,
     )?;
     store.insert(dev.clone());
     Ok(dev)
@@ -529,6 +549,40 @@ async fn batch_delete(
     Ok(result)
 }
 
+// ── rootAVD ──
+
+#[tauri::command]
+fn download_rootavd() -> Result<String, String> {
+    let repo_dir = PathBuf::from("rootAVD");
+    rootavd::clone_or_update(&repo_dir)
+}
+
+#[tauri::command]
+fn toggle_root(
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+) -> Result<String, String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    if dev.status == "running" {
+        return Err("Stop the device before toggling root".into());
+    }
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let repo_dir = PathBuf::from("rootAVD");
+
+    if dev.root_enabled {
+        // Unroot: restore backup
+        let msg = rootavd::unroot(&sdk_path, dev.api_level)?;
+        store.set_root(&id, false);
+        Ok(msg)
+    } else {
+        // Root: patch ramdisk
+        let msg = rootavd::toggle_root(&sdk_path, dev.api_level, &repo_dir)?;
+        store.set_root(&id, true);
+        Ok(msg)
+    }
+}
+
 // ── Config ──
 #[tauri::command]
 fn get_config(config: tauri::State<Config>) -> Config {
@@ -570,6 +624,8 @@ fn main() {
         .manage(proxy_store)
         .invoke_handler(tauri::generate_handler![
             detect_sdk_cmd,
+            list_available_images_cmd,
+            install_system_image_cmd,
             list_devices,
             create_device,
             delete_device,
@@ -601,6 +657,8 @@ fn main() {
             load_snapshot_cmd,
             list_snapshots_cmd,
             delete_snapshot_cmd,
+            download_rootavd,
+            toggle_root,
         ])
         .run(tauri::generate_context!())
         .expect("error while running enmulator");

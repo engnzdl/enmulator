@@ -78,4 +78,11 @@ impl DeviceStore {
         }
         self.save_to_disk();
     }
+
+    pub fn set_root(&self, id: &str, rooted: bool) {
+        if let Some(dev) = self.devices.lock().unwrap().get_mut(id) {
+            dev.root_enabled = rooted;
+        }
+        self.save_to_disk();
+    }
 }

@@ -53,6 +53,16 @@ export default function App() {
     }
   };
 
+  const handleRootToggle = async (id: string) => {
+    try {
+      const result = await invoke<string>('toggle_root', { id });
+      console.log('Root toggle:', result);
+    } catch (e) {
+      console.error('Root toggle failed:', e);
+    }
+    await loadDevices();
+  };
+
   const handleDropApk = async (id: string, apkPath: string) => {
     try {
       console.log(`Installing APK: ${apkPath} on device ${id}`);
@@ -136,6 +146,20 @@ export default function App() {
           <button className="btn-primary" onClick={() => setWizardOpen(true)}>
             + New Device
           </button>
+          <button
+            className="btn-primary"
+            onClick={async () => {
+              try {
+                const msg = await invoke<string>('download_rootavd');
+                console.log(msg);
+              } catch (e) {
+                console.error('download_rootavd failed:', e);
+              }
+            }}
+            title="Clone/update rootAVD from GitLab"
+          >
+            ⬇ rootAVD
+          </button>
         </div>
       </header>
 
@@ -178,6 +202,8 @@ export default function App() {
               device_id={d.id}
               onOpenFiles={() => setFileExplorerDeviceId(d.id)}
               onOpenSnapshots={() => setSnapshotDeviceId(d.id)}
+              rootEnabled={d.root_enabled}
+              onRootToggle={() => handleRootToggle(d.id)}
             />
           ))}
         </footer>

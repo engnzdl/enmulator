@@ -5,6 +5,8 @@ interface Props {
   device_id: string;
   onOpenFiles?: () => void;
   onOpenSnapshots?: () => void;
+  rootEnabled?: boolean;
+  onRootToggle?: () => void;
 }
 
 type ActionState = 'idle' | 'loading' | 'done';
@@ -15,7 +17,7 @@ interface ProxyConfig {
   enabled: boolean;
 }
 
-export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots }: Props) {
+export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, rootEnabled, onRootToggle }: Props) {
   const [states, setStates] = useState<Record<string, ActionState>>({});
   const [recording, setRecording] = useState(false);
   const [proxyHost, setProxyHost] = useState('10.0.2.2');
@@ -142,6 +144,20 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots }
           title="Snapshots"
         >
           📸 Snapshots
+        </button>
+      )}
+
+      {onRootToggle !== undefined && (
+        <button
+          className={`qa-btn${rootEnabled ? ' recording' : ''}${states['root'] === 'loading' ? ' loading' : ''}${states['root'] === 'done' ? ' done' : ''}`}
+          onClick={() => {
+            mark('root', 'loading');
+            onRootToggle();
+            setTimeout(() => mark('root', 'done'), 2000);
+          }}
+          title={rootEnabled ? 'Unroot device' : 'Root device (via rootAVD)'}
+        >
+          {rootEnabled ? '🔓 Unroot' : '🔒 Root'}
         </button>
       )}
 
