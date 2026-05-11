@@ -14,15 +14,15 @@ pub struct FingerprintProfile {
     pub dpi: u16,
     pub resolution_w: u16,
     pub resolution_h: u16,
-    // ── Identity / SIM ──
+    // ── Identity / SIM (mutable via root + setprop) ──
     pub imei: String,
     pub imei2: String,
     pub meid: String,
     pub phone_number: String,
-    pub sim_operator: String,       // MCC+MNC numeric, e.g. "28601"
-    pub sim_operator_name: String,  // Display name, e.g. "Turkcell"
-    pub sim_country: String,        // ISO country, e.g. "tr"
-    pub sim_serial: String,         // ICCID
+    pub sim_operator: String,
+    pub sim_operator_name: String,
+    pub sim_country: String,
+    pub sim_serial: String,
 }
 
 pub fn list_profiles(profiles_dir: &PathBuf) -> Vec<FingerprintProfile> {
@@ -60,35 +60,50 @@ pub fn delete_profile(profiles_dir: &PathBuf, name: &str) -> Result<(), String> 
     }
 }
 
+/// Apply mutable identity properties to a running device (requires root).
+/// ro.product.* properties are immutable (from system image) — NOT applied.
 pub fn apply_to_device(
     sdk_path: &PathBuf,
     serial: &str,
     profile: &FingerprintProfile,
 ) -> Result<(), String> {
-    // Build / product identity
-    adb_bridge::setprop(sdk_path, serial, "ro.product.brand", &profile.brand)?;
-    adb_bridge::setprop(sdk_path, serial, "ro.product.manufacturer", &profile.manufacturer)?;
-    adb_bridge::setprop(sdk_path, serial, "ro.product.model", &profile.model)?;
-    adb_bridge::setprop(sdk_path, serial, "ro.product.device", &profile.device)?;
-    adb_bridge::setprop(sdk_path, serial, "ro.product.name", &profile.device)?;
-    adb_bridge::setprop(sdk_path, serial, "ro.build.fingerprint", &profile.fingerprint)?;
+    // Restart adbd as root
+    let _ = adb_bridge::shell(sdk_path, serial, "root");
 
     // IMEI / MEID
-    adb_bridge::setprop(sdk_path, serial, "persist.radio.imei", &profile.imei)?;
-    adb_bridge::setprop(sdk_path, serial, "persist.radio.imei2", &profile.imei2)?;
-    adb_bridge::setprop(sdk_path, serial, "persist.radio.meid", &profile.meid)?;
+    if !profile.imei.is_empty() {
+        let _ = adb_bridge::setprop(sdk_path, serial, "persist.radio.imei", &profile.imei);
+    }
+    if !profile.imei2.is_empty() {
+        let _ = adb_bridge::setprop(sdk_path, serial, "persist.radio.imei2", &profile.imei2);
+    }
+    if !profile.meid.is_empty() {
+        let _ = adb_bridge::setprop(sdk_path, serial, "persist.radio.meid", &profile.meid);
+    }
 
     // Phone number
-    adb_bridge::setprop(sdk_path, serial, "gsm.sim.operator.numeric", &profile.sim_operator)?;
-    adb_bridge::setprop(sdk_path, serial, "gsm.sim.operator.alpha", &profile.sim_operator_name)?;
-    adb_bridge::setprop(sdk_path, serial, "gsm.sim.operator.iso-country", &profile.sim_country)?;
-    adb_bridge::setprop(sdk_path, serial, "gsm.operator.numeric", &profile.sim_operator)?;
-    adb_bridge::setprop(sdk_path, serial, "gsm.operator.alpha", &profile.sim_operator_name)?;
-    adb_bridge::setprop(sdk_path, serial, "gsm.operator.iso-country", &profile.sim_country)?;
-    adb_bridge::setprop(sdk_path, serial, "gsm.sim.serial", &profile.sim_serial)?;
+    if !profile.phone_number.is_empty() {
+        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.sim.phone_number", &profile.phone_number);
+    }
 
-    // Phone number display
-    adb_bridge::setprop(sdk_path, serial, "gsm.sim.phone_number", &profile.phone_number)?;
+    // Operator
+    if !profile.sim_operator.is_empty() {
+        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.sim.operator.numeric", &profile.sim_operator);
+        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.operator.numeric", &profile.sim_operator);
+    }
+    if !profile.sim_operator_name.is_empty() {
+        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.sim.operator.alpha", &profile.sim_operator_name);
+        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.operator.alpha", &profile.sim_operator_name);
+    }
+    if !profile.sim_country.is_empty() {
+        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.sim.operator.iso-country", &profile.sim_country);
+        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.operator.iso-country", &profile.sim_country);
+    }
+
+    // SIM serial
+    if !profile.sim_serial.is_empty() {
+        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.sim.serial", &profile.sim_serial);
+    }
 
     Ok(())
 }
