@@ -157,7 +157,7 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
           onClick={() => act('bypass', 'bypass_detection', { id: device_id })}
           title="Hide emulator detection (build.props)"
         >
-          <span className="qa-btn-icon">🛡️</span> Bypass
+          <span className="qa-btn-icon">🛡️</span> Emu Detection Bypass
         </button>
       </div>
 
