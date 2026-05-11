@@ -291,19 +291,6 @@ export default function App() {
                   rootEnabled={selectedDevice.root_enabled}
                 />
               </div>
-
-              {/* Tools Section */}
-              <div className="panel-section">
-                <div className="panel-section-title">Tools</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button className="btn-icon" onClick={() => setFileExplorerDeviceId(selectedDevice.id)}>
-                    📁 File Explorer
-                  </button>
-                  <button className="btn-icon" onClick={() => setSnapshotDeviceId(selectedDevice.id)}>
-                    📸 Snapshots
-                  </button>
-                </div>
-              </div>
             </div>
           )}
         </main>
