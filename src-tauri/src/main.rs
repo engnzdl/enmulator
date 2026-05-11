@@ -188,6 +188,17 @@ fn stop_device(
     Ok(())
 }
 
+#[tauri::command]
+fn check_device_alive(
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+) -> Result<bool, String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    Ok(EmulatorStore::is_alive(&sdk_path, dev.port))
+}
+
 // ── ADB ──
 #[tauri::command]
 fn adb_shell(config: tauri::State<Config>, store: tauri::State<Arc<DeviceStore>>, id: String, cmd: String) -> Result<String, String> {
@@ -787,6 +798,7 @@ fn main() {
             clone_device,
             start_device,
             stop_device,
+            check_device_alive,
             batch_start,
             batch_stop,
             batch_delete,

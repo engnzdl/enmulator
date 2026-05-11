@@ -41,4 +41,15 @@ impl EmulatorStore {
             let _ = child.kill();
         }
     }
+
+    /// Check if emulator with given port is actually alive via `adb devices`
+    pub fn is_alive(sdk_path: &PathBuf, port: u16) -> bool {
+        let adb = sdk::get_adb_path(sdk_path);
+        let serial = format!("emulator-{}", port);
+        if let Ok(output) = Command::new(&adb).args(["devices"]).output() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            return stdout.contains(&serial);
+        }
+        false
+    }
 }

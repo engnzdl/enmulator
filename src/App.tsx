@@ -32,6 +32,21 @@ export default function App() {
 
   useEffect(() => { loadDevices(); }, [loadDevices]);
 
+  // Poll running devices to detect manual emulator closes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      devices.forEach(async (d) => {
+        if (d.status === 'running') {
+          try {
+            const alive = await invoke<boolean>('check_device_alive', { id: d.id });
+            if (!alive) loadDevices();
+          } catch { /* ignore */ }
+        }
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [devices, loadDevices]);
+
   // Auto-select first device if nothing selected and devices exist
   useEffect(() => {
     if (devices.length > 0 && !selectedDeviceId) {
