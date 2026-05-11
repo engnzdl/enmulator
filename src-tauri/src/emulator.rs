@@ -16,7 +16,7 @@ impl EmulatorStore {
             .map(|d| d.port)
             .filter(|p| *p > 0)
             .max()
-            .unwrap_or(5552); // 5552 so first fresh start uses 5554
+            .unwrap_or(5552);
         Self {
             processes: Mutex::new(HashMap::new()),
             next_port: Mutex::new(max_port.saturating_add(2)),
@@ -36,6 +36,8 @@ impl EmulatorStore {
         cmd.arg("-avd").arg(avd_name).arg("-port").arg(port.to_string());
         if headless { cmd.arg("-no-window"); }
         cmd.arg("-no-boot-anim");
+        cmd.arg("-no-snapshot-save");
+        cmd.arg("-no-snapshot-load");
 
         let child = cmd.spawn().map_err(|e| format!("Failed to start: {}", e))?;
         self.processes.lock().unwrap().insert(avd_name.to_string(), child);
@@ -45,6 +47,10 @@ impl EmulatorStore {
     pub fn stop(&self, sdk_path: &PathBuf, avd_name: &str, port: u16) {
         let adb = sdk::get_adb_path(sdk_path);
         let serial = format!("emulator-{}", port);
+        // Delete quick-boot snapshot so next start is cold
+        let _ = Command::new(&adb)
+            .args(["-s", &serial, "emu", "avd", "snapshot", "delete", "default_boot"])
+            .output();
         let _ = Command::new(&adb).args(["-s", &serial, "emu", "kill"]).output();
         if let Some(mut child) = self.processes.lock().unwrap().remove(avd_name) {
             let _ = child.kill();
