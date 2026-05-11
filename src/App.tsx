@@ -269,10 +269,11 @@ export default function App() {
                     </span>
                   </div>
                   <div className="panel-device-meta">
-                    <span>📋 {selectedDevice.profile || 'custom'}</span>
+                    <span>📱 {selectedDevice.fingerprint_profile || selectedDevice.profile || 'custom'}</span>
                     <span>🔧 Android {(() => {
                       const v: Record<number, string> = {35:'15',34:'14',33:'13',32:'12L',31:'12',30:'11',29:'10',28:'9'};
-                      return v[selectedDevice.api_level] || `API ${selectedDevice.api_level}`;
+                      const ver = v[selectedDevice.api_level];
+                      return ver ? `${ver} (API ${selectedDevice.api_level})` : `API ${selectedDevice.api_level}`;
                     })()}</span>
                     <span>🔌 Port {selectedDevice.port || '-'}</span>
                     {selectedDevice.root_enabled && <span>🔓 rooted</span>}
