@@ -11,6 +11,7 @@ pub fn create_avd(
     abi: &str,
     tag: &str,
     device_definition: &str,
+    fingerprint_profile: Option<String>,
     devices_dir: &PathBuf,
 ) -> Result<Device, String> {
     let avd_name = format!("enmulator_{}", device_id);
@@ -41,6 +42,7 @@ pub fn create_avd(
         display_name: display_name.to_string(),
         avd_name,
         profile: Some(device_definition.to_string()),
+        fingerprint_profile,
         api_level,
         status: "stopped".to_string(),
         port: 0,

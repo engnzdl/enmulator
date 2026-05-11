@@ -10,6 +10,7 @@ pub struct Device {
     pub display_name: String,
     pub avd_name: String,
     pub profile: Option<String>,
+    pub fingerprint_profile: Option<String>,
     pub api_level: u8,
     pub status: String,
     pub port: u16,

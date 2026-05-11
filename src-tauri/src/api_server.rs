@@ -82,6 +82,7 @@ async fn create_device(
         &abi,
         &tag,
         &profile,
+        None,
         &state.device_store.devices_dir,
     ) {
         Ok(dev) => {
@@ -202,6 +203,7 @@ async fn clone_device(
         display_name: target_name,
         avd_name: format!("enmulator_{}", target_id),
         profile: source.profile.clone(),
+        fingerprint_profile: source.fingerprint_profile.clone(),
         api_level: source.api_level,
         status: "stopped".to_string(),
         port: 0,
