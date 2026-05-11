@@ -3,10 +3,12 @@ import { invoke } from '@tauri-apps/api/core';
 import DeviceCard, { Device } from './components/DeviceCard';
 import CreateWizard from './components/CreateWizard';
 import QuickActions from './components/QuickActions';
+import FileExplorer from './components/FileExplorer';
 
 export default function App() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [fileExplorerDeviceId, setFileExplorerDeviceId] = useState<string | null>(null);
 
   const loadDevices = useCallback(async () => {
     try {
@@ -88,7 +90,11 @@ export default function App() {
         <footer className="toolbar">
           <h2 className="toolbar-title">Quick Actions</h2>
           {devices.map((d) => (
-            <QuickActions key={d.id} device_id={d.id} />
+            <QuickActions
+              key={d.id}
+              device_id={d.id}
+              onOpenFiles={() => setFileExplorerDeviceId(d.id)}
+            />
           ))}
         </footer>
       )}
@@ -98,6 +104,13 @@ export default function App() {
         onClose={() => setWizardOpen(false)}
         onCreated={handleCreate}
       />
+
+      {fileExplorerDeviceId && (
+        <FileExplorer
+          device_id={fileExplorerDeviceId}
+          onClose={() => setFileExplorerDeviceId(null)}
+        />
+      )}
     </div>
   );
 }
