@@ -3,5 +3,6 @@ src-tauri/target/
 dist/
 devices/
 config.json
+docs/
 *.log
 .DS_Store
