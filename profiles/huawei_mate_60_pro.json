@@ -7,5 +7,13 @@
   "fingerprint": "HUAWEI/ALN-AL80/HWALN:12/HUAWEIALN-AL80/104.0.0.132C00:user/release-keys",
   "dpi": 440,
   "resolution_w": 1260,
-  "resolution_h": 2720
+  "resolution_h": 2720,
+  "imei": "352446862646212",
+  "imei2": "352446862646220",
+  "meid": "47061654058963",
+  "phone_number": "+905887516831",
+  "sim_operator": "310260",
+  "sim_operator_name": "T-Mobile",
+  "sim_country": "us",
+  "sim_serial": "8908597616574747457"
 }

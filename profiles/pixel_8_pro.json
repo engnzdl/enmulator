@@ -7,5 +7,13 @@
   "fingerprint": "google/husky/husky:14/UP1A.231005.007/10993252:user/release-keys",
   "dpi": 420,
   "resolution_w": 1344,
-  "resolution_h": 2992
+  "resolution_h": 2992,
+  "imei": "359568467493246",
+  "imei2": "359568467493253",
+  "meid": "73678627456330",
+  "phone_number": "+905637217546",
+  "sim_operator": "310260",
+  "sim_operator_name": "T-Mobile",
+  "sim_country": "us",
+  "sim_serial": "8901793385519400477"
 }

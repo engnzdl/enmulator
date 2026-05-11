@@ -1902,3 +1902,76 @@ button:disabled {
   color: var(--text-primary);
   transform: scale(1.05);
 }
+
+/* ── Identity Card ── */
+.identity-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.identity-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.identity-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.identity-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.identity-field label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+}
+
+.identity-input {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #2a2a2a;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  transition: border-color var(--transition-fast);
+}
+
+.identity-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.identity-input::placeholder {
+  color: #444;
+}
+
+.identity-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: var(--border-subtle);
+}
+
+.identity-saved {
+  font-size: 0.75rem;
+  color: var(--success);
+  font-weight: 600;
+}
+
+.btn-sm {
+  font-size: 0.72rem;
+  padding: 5px 14px;
+}

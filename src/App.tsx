@@ -4,6 +4,7 @@ import DeviceCard, { Device } from './components/DeviceCard';
 import CreateWizard from './components/CreateWizard';
 import QuickActions from './components/QuickActions';
 import ProxyCard from './components/ProxyCard';
+import IdentityCard from './components/IdentityCard';
 import FileExplorer from './components/FileExplorer';
 import SettingsPanel from './components/SettingsPanel';
 interface BatchResult {
@@ -289,6 +290,16 @@ export default function App() {
                   onOpenFiles={() => setFileExplorerDeviceId(selectedDevice.id)}
                   rootEnabled={selectedDevice.root_enabled}
                   onRootToggle={() => handleRootToggle(selectedDevice.id)}
+                />
+              </div>
+
+              {/* Identity Section */}
+              <div className="panel-section">
+                <div className="panel-section-title">Device Identity</div>
+                <IdentityCard
+                  device_id={selectedDevice.id}
+                  deviceStatus={selectedDevice.status}
+                  profileName={selectedDevice.fingerprint_profile ?? null}
                 />
               </div>
 

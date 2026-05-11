@@ -7,5 +7,13 @@
   "fingerprint": "samsung/e3qxxx/e3q:14/UP1A.231005.007/S928BXXU3AXH7:user/release-keys",
   "dpi": 500,
   "resolution_w": 1440,
-  "resolution_h": 3120
+  "resolution_h": 3120,
+  "imei": "357211561005499",
+  "imei2": "357211561005507",
+  "meid": "34167688455427",
+  "phone_number": "+905107063768",
+  "sim_operator": "28601",
+  "sim_operator_name": "Turkcell",
+  "sim_country": "tr",
+  "sim_serial": "8901912830639025400"
 }

@@ -7,5 +7,13 @@
   "fingerprint": "OPPO/CPH2659/OP5D1AL1:15/AP3A.240617.008/V.8.0.0.1.GLO_EU:user/release-keys",
   "dpi": 510,
   "resolution_w": 1440,
-  "resolution_h": 3168
+  "resolution_h": 3168,
+  "imei": "351295831296117",
+  "imei2": "351295831296125",
+  "meid": "79772430051191",
+  "phone_number": "+905010916998",
+  "sim_operator": "46001",
+  "sim_operator_name": "China Unicom",
+  "sim_country": "cn",
+  "sim_serial": "8907281194004854027"
 }

@@ -7,5 +7,13 @@
   "fingerprint": "asus/WW_AI2401_H/ASUS_AI2401:14/UP1A.231005.007/WW_34.1420.1420.474:user/release-keys",
   "dpi": 388,
   "resolution_w": 1080,
-  "resolution_h": 2400
+  "resolution_h": 2400,
+  "imei": "353581352249124",
+  "imei2": "353581352249132",
+  "meid": "57204370840363",
+  "phone_number": "+905384117247",
+  "sim_operator": "46601",
+  "sim_operator_name": "FarEasTone",
+  "sim_country": "tw",
+  "sim_serial": "8909960223964811961"
 }

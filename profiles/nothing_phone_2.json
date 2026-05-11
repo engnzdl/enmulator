@@ -7,5 +7,13 @@
   "fingerprint": "Nothing/Pong/Pong:14/UKQ1.230917.001/1703495267:user/release-keys",
   "dpi": 394,
   "resolution_w": 1080,
-  "resolution_h": 2412
+  "resolution_h": 2412,
+  "imei": "359015200065790",
+  "imei2": "359015200065808",
+  "meid": "32727452560752",
+  "phone_number": "+905843216919",
+  "sim_operator": "23410",
+  "sim_operator_name": "O2",
+  "sim_country": "gb",
+  "sim_serial": "8902984362255877563"
 }

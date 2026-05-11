@@ -7,5 +7,13 @@
   "fingerprint": "google/caiman/caiman:15/AP4A.241205.013/12768715:user/release-keys",
   "dpi": 420,
   "resolution_w": 1280,
-  "resolution_h": 2856
+  "resolution_h": 2856,
+  "imei": "359468585442771",
+  "imei2": "359468585442789",
+  "meid": "61827579480073",
+  "phone_number": "+905794912739",
+  "sim_operator": "310260",
+  "sim_operator_name": "T-Mobile",
+  "sim_country": "us",
+  "sim_serial": "8903377618218456845"
 }

@@ -7,5 +7,13 @@
   "fingerprint": "Sony/XQ-EE54/pdx246:14/64.1.A.0.867/064001A000086702032089464:user/release-keys",
   "dpi": 449,
   "resolution_w": 1080,
-  "resolution_h": 2520
+  "resolution_h": 2520,
+  "imei": "352119066880206",
+  "imei2": "352119066880214",
+  "meid": "97647573423126",
+  "phone_number": "+905959934611",
+  "sim_operator": "44050",
+  "sim_operator_name": "KDDI",
+  "sim_country": "jp",
+  "sim_serial": "8907646809930078163"
 }

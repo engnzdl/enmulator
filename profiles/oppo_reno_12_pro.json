@@ -7,5 +7,13 @@
   "fingerprint": "OPPO/CPH2629/OP598AL1:14/UKQ1.230924.001/V14.0.1.680:user/release-keys",
   "dpi": 394,
   "resolution_w": 1080,
-  "resolution_h": 2412
+  "resolution_h": 2412,
+  "imei": "352245331573175",
+  "imei2": "352245331573183",
+  "meid": "57085596020835",
+  "phone_number": "+905436787107",
+  "sim_operator": "46003",
+  "sim_operator_name": "China Telecom",
+  "sim_country": "cn",
+  "sim_serial": "8906919297156978645"
 }
