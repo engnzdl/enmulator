@@ -4,6 +4,7 @@ export interface Device {
   id: string;
   display_name: string;
   profile: string | null;
+  fingerprint_profile: string | null;
   api_level: number;
   status: string;
   port: number;
