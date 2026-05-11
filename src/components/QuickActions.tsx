@@ -7,9 +7,18 @@ interface Props {
 
 type ActionState = 'idle' | 'loading' | 'done';
 
+interface ProxyConfig {
+  host: string;
+  port: number;
+  enabled: boolean;
+}
+
 export default function QuickActions({ device_id }: Props) {
   const [states, setStates] = useState<Record<string, ActionState>>({});
   const [recording, setRecording] = useState(false);
+  const [proxyHost, setProxyHost] = useState('10.0.2.2');
+  const [proxyPort, setProxyPort] = useState('8080');
+  const [proxyEnabled, setProxyEnabled] = useState(false);
 
   const mark = (key: string, s: ActionState) => {
     setStates((prev) => ({ ...prev, [key]: s }));
@@ -45,6 +54,26 @@ export default function QuickActions({ device_id }: Props) {
       mark(key, 'done');
     } catch (e) {
       console.error('record toggle failed:', e);
+      mark(key, 'idle');
+    }
+  };
+
+  const handleProxyToggle = async () => {
+    const key = 'proxy';
+    const enabled = !proxyEnabled;
+    const portNum = parseInt(proxyPort, 10) || 8080;
+    mark(key, 'loading');
+    try {
+      await invoke('set_device_proxy', {
+        id: device_id,
+        host: proxyHost || '10.0.2.2',
+        port: portNum,
+        enabled,
+      });
+      setProxyEnabled(enabled);
+      mark(key, 'done');
+    } catch (e) {
+      console.error('proxy toggle failed:', e);
       mark(key, 'idle');
     }
   };
@@ -93,6 +122,35 @@ export default function QuickActions({ device_id }: Props) {
       >
         📋 Clip
       </button>
+
+      {/* Proxy inline inputs + toggle */}
+      <div className="proxy-controls" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <input
+          type="text"
+          value={proxyHost}
+          onChange={(e) => setProxyHost(e.target.value)}
+          placeholder="host"
+          style={{ width: 90, fontSize: 11, padding: '2px 4px' }}
+          disabled={proxyEnabled}
+        />
+        <span>:</span>
+        <input
+          type="number"
+          value={proxyPort}
+          onChange={(e) => setProxyPort(e.target.value)}
+          placeholder="port"
+          style={{ width: 55, fontSize: 11, padding: '2px 4px' }}
+          disabled={proxyEnabled}
+        />
+        <button
+          className={stateClass('proxy')}
+          onClick={handleProxyToggle}
+          title={proxyEnabled ? 'Disable Proxy' : 'Enable Proxy'}
+          style={{ fontSize: 11, padding: '2px 6px' }}
+        >
+          {proxyEnabled ? 'Disable' : 'Enable'}
+        </button>
+      </div>
     </div>
   );
 }
