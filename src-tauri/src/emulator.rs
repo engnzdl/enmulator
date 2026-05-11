@@ -46,42 +46,11 @@ impl EmulatorStore {
         cmd.arg("-no-snapshot-save");
         cmd.arg("-no-snapshot-load");
 
-        // Pass identity props at launch so ro.* properties take effect
-        if let Some(p) = profile {
-            cmd.arg("-prop").arg(format!("ro.product.brand={}", p.brand));
-            cmd.arg("-prop").arg(format!("ro.product.manufacturer={}", p.manufacturer));
-            cmd.arg("-prop").arg(format!("ro.product.model={}", p.model));
-            cmd.arg("-prop").arg(format!("ro.product.device={}", p.device));
-            cmd.arg("-prop").arg(format!("ro.product.name={}", p.device));
-            cmd.arg("-prop").arg(format!("ro.build.fingerprint={}", p.fingerprint));
-            if !p.imei.is_empty() {
-                cmd.arg("-prop").arg(format!("persist.radio.imei={}", p.imei));
-            }
-            if !p.imei2.is_empty() {
-                cmd.arg("-prop").arg(format!("persist.radio.imei2={}", p.imei2));
-            }
-            if !p.meid.is_empty() {
-                cmd.arg("-prop").arg(format!("persist.radio.meid={}", p.meid));
-            }
-            if !p.sim_operator.is_empty() {
-                cmd.arg("-prop").arg(format!("gsm.sim.operator.numeric={}", p.sim_operator));
-                cmd.arg("-prop").arg(format!("gsm.operator.numeric={}", p.sim_operator));
-            }
-            if !p.sim_operator_name.is_empty() {
-                cmd.arg("-prop").arg(format!("gsm.sim.operator.alpha={}", p.sim_operator_name));
-                cmd.arg("-prop").arg(format!("gsm.operator.alpha={}", p.sim_operator_name));
-            }
-            if !p.sim_country.is_empty() {
-                cmd.arg("-prop").arg(format!("gsm.sim.operator.iso-country={}", p.sim_country));
-                cmd.arg("-prop").arg(format!("gsm.operator.iso-country={}", p.sim_country));
-            }
-            if !p.phone_number.is_empty() {
-                cmd.arg("-prop").arg(format!("gsm.sim.phone_number={}", p.phone_number));
-            }
-            if !p.sim_serial.is_empty() {
-                cmd.arg("-prop").arg(format!("gsm.sim.serial={}", p.sim_serial));
-            }
-        }
+        // -prop flags don't work for Android system properties on QEMU.
+        // Identity (IMEI, operator, etc.) is applied AFTER boot via apply_to_device
+        // which uses adb root + setprop for mutable properties.
+        // ro.product.* properties are immutable (from system image) regardless.
+        let _ = profile;
 
         let child = cmd.spawn().map_err(|e| format!("Failed to start: {}", e))?;
         self.processes.lock().unwrap().insert(avd_name.to_string(), child);
@@ -91,7 +60,6 @@ impl EmulatorStore {
     pub fn stop(&self, sdk_path: &PathBuf, avd_name: &str, port: u16) {
         let adb = sdk::get_adb_path(sdk_path);
         let serial = format!("emulator-{}", port);
-        // Delete quick-boot snapshot so next start is cold
         let _ = Command::new(&adb)
             .args(["-s", &serial, "emu", "avd", "snapshot", "delete", "default_boot"])
             .output();

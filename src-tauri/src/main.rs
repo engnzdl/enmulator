@@ -169,7 +169,6 @@ fn start_device(
     let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
     let dev = store.get(&id).ok_or("Device not found")?;
 
-    // Load fingerprint profile for identity props at launch
     let profile = dev.fingerprint_profile.as_ref().and_then(|name| {
         fingerprint::list_profiles(&PathBuf::from("../profiles"))
             .into_iter()
@@ -179,6 +178,28 @@ fn start_device(
     let port = emu_store.start(&sdk_path, &dev.avd_name, headless, profile.as_ref())?;
     store.update_port(&id, port);
     store.update_status(&id, "running");
+
+    // Apply identity (IMEI, operator, phone) after boot via adb root + setprop
+    if let Some(fp) = profile {
+        let sdk = sdk_path.clone();
+        std::thread::spawn(move || {
+            let serial = format!("emulator-{}", port);
+            // Wait for boot (max 90s)
+            for _ in 0..45 {
+                if let Ok(output) = std::process::Command::new(sdk.join("platform-tools/adb"))
+                    .args(["-s", &serial, "shell", "getprop", "sys.boot_completed"])
+                    .output()
+                {
+                    if String::from_utf8_lossy(&output.stdout).trim() == "1" {
+                        break;
+                    }
+                }
+                std::thread::sleep(std::time::Duration::from_secs(2));
+            }
+            let _ = fingerprint::apply_to_device(&sdk, &serial, &fp);
+        });
+    }
+
     Ok(port)
 }
 
@@ -316,6 +337,9 @@ fn set_device_identity(
     }
     let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
     let serial = format!("emulator-{}", dev.port);
+
+    // Restart adbd as root so setprop works for persist.radio.* / gsm.*
+    let _ = adb_bridge::shell(&sdk_path, &serial, "root");
 
     if let Some(v) = &imei { adb_bridge::setprop(&sdk_path, &serial, "persist.radio.imei", v)?; }
     if let Some(v) = &imei2 { adb_bridge::setprop(&sdk_path, &serial, "persist.radio.imei2", v)?; }
