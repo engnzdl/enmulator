@@ -73,7 +73,6 @@ fn create_device(
     store: tauri::State<Arc<DeviceStore>>,
     config: tauri::State<Config>,
     name: String,
-    profile: String,
     api_level: u8,
     abi: String,
     tag: String,
@@ -83,8 +82,23 @@ fn create_device(
         config.sdk_path.as_ref().ok_or("SDK not configured")?
     );
     sdk::check_sdk_tools(&sdk_path)?;
+
+    // Look up fingerprint profile for resolution/DPI
+    let (res_w, res_h, dpi) = if let Some(ref fp_name) = fingerprint_profile {
+        let profiles = fingerprint::list_profiles(&PathBuf::from("profiles"));
+        profiles
+            .iter()
+            .find(|p| p.name == *fp_name)
+            .map(|p| (Some(p.resolution_w), Some(p.resolution_h), Some(p.dpi)))
+            .unwrap_or((None, None, None))
+    } else {
+        (None, None, None)
+    };
+
     let dev = avd_manager::create_avd(
-        &sdk_path, &name, &name, api_level, &abi, &tag, &profile, fingerprint_profile, &store.devices_dir,
+        &sdk_path, &name, &name, api_level, &abi, &tag,
+        fingerprint_profile, res_w, res_h, dpi,
+        &store.devices_dir,
     )?;
     store.insert(dev.clone());
     Ok(dev)

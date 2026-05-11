@@ -1,0 +1,11 @@
+{
+  "name": "Motorola Razr 50 Ultra",
+  "brand": "motorola",
+  "model": "XT2451-4",
+  "manufacturer": "motorola",
+  "device": "arcfox",
+  "fingerprint": "motorola/arcfox_global/arcfox:14/U1UX34.56-118/47b8:user/release-keys",
+  "dpi": 413,
+  "resolution_w": 1080,
+  "resolution_h": 2640
+}
