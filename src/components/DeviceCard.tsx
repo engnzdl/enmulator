@@ -105,24 +105,26 @@ export default function DeviceCard({
         />
       )}
 
-      {/* Device Icon */}
-      <div className="device-icon">
-        📱
-      </div>
-
-      {/* Device Info */}
-      <div className="device-info">
-        <div className="device-name">
-          <span className="status-dot" />
-          {device.display_name}
+      <div className="device-card-top">
+        {/* Device Icon */}
+        <div className="device-icon">
+          📱
         </div>
-        <div className="device-meta">
-          {device.fingerprint_profile || device.profile || 'custom'} · {(() => {
-            const v: Record<number, string> = {35:'15',34:'14',33:'13',32:'12L',31:'12',30:'11',29:'10',28:'9'};
-            const ver = v[device.api_level];
-            return ver ? `Android ${ver}` : `API ${device.api_level}`;
-          })()}
-          {dragOver && <span className="drop-hint"> — Drop APK to install</span>}
+
+        {/* Device Info */}
+        <div className="device-info">
+          <div className="device-name">
+            <span className="status-dot" />
+            {device.display_name}
+          </div>
+          <div className="device-meta">
+            {device.fingerprint_profile || device.profile || 'custom'} · {(() => {
+              const v: Record<number, string> = {35:'15',34:'14',33:'13',32:'12L',31:'12',30:'11',29:'10',28:'9'};
+              const ver = v[device.api_level];
+              return ver ? `Android ${ver}` : `API ${device.api_level}`;
+            })()}
+            {dragOver && <span className="drop-hint"> — Drop APK to install</span>}
+          </div>
         </div>
       </div>
 
