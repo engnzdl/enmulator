@@ -1,6 +1,8 @@
 use serde::Serialize;
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
+use tauri::Emitter;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct SystemImage {
@@ -150,37 +152,83 @@ pub fn list_available_images(sdk_path: &PathBuf) -> Result<Vec<SystemImage>, Str
 
 /// Installs a system image package via sdkmanager.
 /// The package should be in the format: "system-images;android-{api};{tag};{abi}"
-pub fn install_system_image(sdk_path: &PathBuf, package: &str) -> Result<(), String> {
+/// Streams stdout lines in real-time via Tauri `download-progress` events.
+pub fn install_system_image(app: &tauri::AppHandle, sdk_path: &PathBuf, package: &str) -> Result<(), String> {
     let sdkmanager = get_sdkmanager_path(sdk_path);
     
     // First accept all licenses
     let _ = Command::new(&sdkmanager)
         .args(["--licenses"])
-        .stdin(std::process::Stdio::piped())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .spawn()
         .and_then(|mut child| {
             use std::io::Write;
-            // Write 'y' repeatedly to accept all licenses
             if let Some(stdin) = child.stdin.as_mut() {
                 let _ = writeln!(stdin, "y\ny\ny\ny\ny\ny\ny\ny\ny\ny");
             }
             child.wait()
         });
     
-    let output = Command::new(&sdkmanager)
+    let mut child = Command::new(&sdkmanager)
         .args(["--install", package])
-        .output()
-        .map_err(|e| format!("sdkmanager install error: {}", e))?;
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("sdkmanager install spawn error: {}", e))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        if stderr.to_lowercase().contains("already installed") {
+    let stdout = child.stdout.take().ok_or("Failed to capture sdkmanager stdout")?;
+    let stderr = child.stderr.take().ok_or("Failed to capture sdkmanager stderr")?;
+
+    let app_handle = app.clone();
+    let pkg = package.to_string();
+
+    // Stream stdout lines as progress events in a separate thread
+    let stdout_handle = std::thread::spawn(move || {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            match line {
+                Ok(text) => {
+                    let payload = serde_json::json!({
+                        "package": pkg,
+                        "line": text,
+                    });
+                    let _ = app_handle.emit("download-progress", payload);
+                }
+                Err(_) => break,
+            }
+        }
+    });
+
+    // Collect stderr for error reporting
+    let stderr_handle = std::thread::spawn(move || {
+        let reader = BufReader::new(stderr);
+        let mut buf = String::new();
+        for line in reader.lines() {
+            match line {
+                Ok(text) => {
+                    buf.push_str(&text);
+                    buf.push('\n');
+                }
+                Err(_) => break,
+            }
+        }
+        buf
+    });
+
+    // Wait for stdout reading to finish
+    stdout_handle.join().map_err(|_| "stdout thread panicked".to_string())?;
+
+    // Wait for process to exit
+    let status = child.wait().map_err(|e| format!("sdkmanager wait error: {}", e))?;
+    let stderr_text = stderr_handle.join().map_err(|_| "stderr thread panicked".to_string())?;
+
+    if !status.success() {
+        if stderr_text.to_lowercase().contains("already installed") {
             return Ok(());
         }
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        return Err(format!("{}{}", stderr, stdout));
+        return Err(stderr_text);
     }
     Ok(())
 }

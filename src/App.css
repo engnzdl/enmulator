@@ -1545,3 +1545,70 @@ button:disabled {
 .profile-form-row label {
   display: block;
 }
+
+/* ── Download Progress Bar ── */
+
+.download-progress {
+  margin-top: 12px;
+}
+
+.progress-bar-container {
+  position: relative;
+  height: 24px;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #6ba3ff);
+  border-radius: var(--radius-sm);
+  transition: width 0.3s ease;
+  min-width: 0;
+}
+
+.progress-bar-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  white-space: nowrap;
+}
+
+/* Indeterminate (no % yet) */
+.progress-bar-indeterminate {
+  height: 100%;
+  width: 30%;
+  background: linear-gradient(90deg, var(--accent), #6ba3ff);
+  border-radius: var(--radius-sm);
+  animation: indeterminate-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes indeterminate-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(calc(100% / 0.3 * 100%)); }
+}
+
+.download-lines {
+  max-height: 140px;
+  overflow-y: auto;
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.download-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

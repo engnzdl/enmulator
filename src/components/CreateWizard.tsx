@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
 interface SystemImage {
   api_level: number;
@@ -63,6 +64,11 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
   const [error, setError] = useState('');
   const [statusMsg, setStatusMsg] = useState('');
 
+  // ── Download progress ──
+  const [downloadLines, setDownloadLines] = useState<string[]>([]);
+  const [downloadPercent, setDownloadPercent] = useState<number | null>(null);
+  const unlistenRef = useRef<UnlistenFn | null>(null);
+
   // ── Fetch data when wizard opens ──
   useEffect(() => {
     if (!isOpen) return;
@@ -72,6 +78,13 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
     setShowNewProfileForm(false);
     setSelectedProfile('');
     setLoading(true);
+    setDownloadLines([]);
+    setDownloadPercent(null);
+    // Clean up any lingering event listener
+    if (unlistenRef.current) {
+      unlistenRef.current();
+      unlistenRef.current = null;
+    }
 
     // Generate random device name
     const adjectives = ['Alpha', 'Beta', 'Delta', 'Gamma', 'Neo', 'Optima', 'Prime', 'Quantum', 'Swift', 'Ultra'];
@@ -204,20 +217,43 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
     }
     setError('');
     setStatusMsg('');
+    setDownloadLines([]);
+    setDownloadPercent(null);
 
     const pkg = `system-images;android-${apiLevel};${tag};${abi}`;
 
+    // Set up progress listener before starting install
+    const unlisten = await listen<{ package: string; line: string }>('download-progress', (event) => {
+      setDownloadLines((prev) => {
+        const next = [...prev, event.payload.line];
+        // Try to detect a percentage from the line
+        const pctMatch = event.payload.line.match(/(\d+)%/);
+        if (pctMatch) {
+          setDownloadPercent(parseInt(pctMatch[1], 10));
+        }
+        return next;
+      });
+    });
+    unlistenRef.current = unlisten;
+
     // Install system image
     setInstalling(true);
-    setStatusMsg(`Checking system image: ${pkg}...`);
+    setStatusMsg(`Downloading system image: ${pkg}...`);
     try {
       await invoke('install_system_image_cmd', { package: pkg });
       setStatusMsg('System image ready.');
+      setDownloadPercent(100);
     } catch (e: any) {
       setInstalling(false);
+      // Clean up listener on error
+      unlisten();
+      unlistenRef.current = null;
       setError(`Failed to download system image: ${e?.message ?? String(e)}`);
       return;
     }
+    // Clean up listener after success
+    unlisten();
+    unlistenRef.current = null;
     setInstalling(false);
 
     // Create AVD with fingerprint profile (resolution/DPI set from profile)
@@ -508,6 +544,30 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
         {/* ── Messages ── */}
         {statusMsg && <p className="status-msg"><span className="status-spinner" /> {statusMsg}</p>}
         {error && <p className="error-msg">{error}</p>}
+
+        {/* ── Download Progress Bar ── */}
+        {installing && (
+          <div className="download-progress">
+            {downloadPercent !== null ? (
+              <div className="progress-bar-container">
+                <div className="progress-bar-fill" style={{ width: `${downloadPercent}%` }} />
+                <span className="progress-bar-label">{downloadPercent}%</span>
+              </div>
+            ) : (
+              <div className="progress-bar-container">
+                <div className="progress-bar-indeterminate" />
+                <span className="progress-bar-label">Downloading...</span>
+              </div>
+            )}
+            {downloadLines.length > 0 && (
+              <div className="download-lines">
+                {downloadLines.slice(-8).map((line, i) => (
+                  <div key={i} className="download-line">{line}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Navigation Buttons ── */}
         <div className="modal-actions">
