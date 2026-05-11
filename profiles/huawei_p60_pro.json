@@ -7,5 +7,13 @@
   "fingerprint": "HUAWEI/MNA-LX9/HWMNA:14/HUAWEIMNA-LX9/103.0.0.280C432:user/release-keys",
   "dpi": 444,
   "resolution_w": 1220,
-  "resolution_h": 2700
+  "resolution_h": 2700,
+  "imei": "357826497934148",
+  "imei2": "357826497934155",
+  "meid": "61935854706868",
+  "phone_number": "+905336031465",
+  "sim_operator": "310260",
+  "sim_operator_name": "T-Mobile",
+  "sim_country": "us",
+  "sim_serial": "8904440232502012974"
 }

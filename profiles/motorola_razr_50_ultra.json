@@ -7,5 +7,13 @@
   "fingerprint": "motorola/arcfox_global/arcfox:14/U1UX34.56-118/47b8:user/release-keys",
   "dpi": 413,
   "resolution_w": 1080,
-  "resolution_h": 2640
+  "resolution_h": 2640,
+  "imei": "359240169989877",
+  "imei2": "359240169989885",
+  "meid": "17899883293665",
+  "phone_number": "+905995008432",
+  "sim_operator": "310260",
+  "sim_operator_name": "T-Mobile",
+  "sim_country": "us",
+  "sim_serial": "8908719510579727466"
 }

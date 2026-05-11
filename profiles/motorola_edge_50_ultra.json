@@ -7,5 +7,13 @@
   "fingerprint": "motorola/eqe_global/eqe:14/U1UE34.30-69-3/3c0d2:user/release-keys",
   "dpi": 446,
   "resolution_w": 1220,
-  "resolution_h": 2712
+  "resolution_h": 2712,
+  "imei": "358264332597129",
+  "imei2": "358264332597137",
+  "meid": "40286055422465",
+  "phone_number": "+905547792537",
+  "sim_operator": "310410",
+  "sim_operator_name": "AT&T",
+  "sim_country": "us",
+  "sim_serial": "8905763959622286823"
 }

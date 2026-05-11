@@ -7,5 +7,13 @@
   "fingerprint": "samsung/dm3qxxx/dm3q:14/UP1A.231005.007/S918BXXU6CXK4:user/release-keys",
   "dpi": 500,
   "resolution_w": 1440,
-  "resolution_h": 3088
+  "resolution_h": 3088,
+  "imei": "358322697708366",
+  "imei2": "358322697708374",
+  "meid": "81456508546307",
+  "phone_number": "+905710719686",
+  "sim_operator": "28603",
+  "sim_operator_name": "Turk Telekom",
+  "sim_country": "tr",
+  "sim_serial": "8908873743671037595"
 }

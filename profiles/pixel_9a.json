@@ -7,5 +7,13 @@
   "fingerprint": "google/tegu/tegu:15/AP4A.250305.002/13257421:user/release-keys",
   "dpi": 420,
   "resolution_w": 1080,
-  "resolution_h": 2424
+  "resolution_h": 2424,
+  "imei": "352230843936920",
+  "imei2": "352230843936938",
+  "meid": "60797267249326",
+  "phone_number": "+905174836497",
+  "sim_operator": "310260",
+  "sim_operator_name": "T-Mobile",
+  "sim_country": "us",
+  "sim_serial": "8904336041056777675"
 }

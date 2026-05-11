@@ -7,5 +7,13 @@
   "fingerprint": "samsung/b5qxxx/b5q:15/AP3A.240905.015.A1/S938BXXU1AYB5:user/release-keys",
   "dpi": 500,
   "resolution_w": 1440,
-  "resolution_h": 3120
+  "resolution_h": 3120,
+  "imei": "351371505786517",
+  "imei2": "351371505786525",
+  "meid": "39911570614033",
+  "phone_number": "+905723649220",
+  "sim_operator": "28602",
+  "sim_operator_name": "Vodafone TR",
+  "sim_country": "tr",
+  "sim_serial": "8905641752952096082"
 }

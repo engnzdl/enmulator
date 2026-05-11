@@ -7,5 +7,13 @@
   "fingerprint": "Sony/XQ-EC54/pdx237:14/64.2.A.2.42/064002A00204:user/release-keys",
   "dpi": 526,
   "resolution_w": 2340,
-  "resolution_h": 2340
+  "resolution_h": 2340,
+  "imei": "354991728545916",
+  "imei2": "354991728545924",
+  "meid": "33233103842087",
+  "phone_number": "+905317078107",
+  "sim_operator": "44010",
+  "sim_operator_name": "NTT docomo",
+  "sim_country": "jp",
+  "sim_serial": "8909285575538830773"
 }

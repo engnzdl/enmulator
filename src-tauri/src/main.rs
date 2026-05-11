@@ -288,6 +288,48 @@ fn apply_profile(
     fingerprint::apply_to_device(&sdk_path, &serial, &profile)
 }
 
+#[tauri::command]
+fn set_device_identity(
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    device_id: String,
+    imei: Option<String>,
+    imei2: Option<String>,
+    meid: Option<String>,
+    phone_number: Option<String>,
+    sim_operator: Option<String>,
+    sim_operator_name: Option<String>,
+    sim_country: Option<String>,
+    sim_serial: Option<String>,
+) -> Result<(), String> {
+    let dev = store.get(&device_id).ok_or("Device not found")?;
+    if dev.status != "running" {
+        return Err("Device must be running".into());
+    }
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let serial = format!("emulator-{}", dev.port);
+
+    if let Some(v) = &imei { adb_bridge::setprop(&sdk_path, &serial, "persist.radio.imei", v)?; }
+    if let Some(v) = &imei2 { adb_bridge::setprop(&sdk_path, &serial, "persist.radio.imei2", v)?; }
+    if let Some(v) = &meid { adb_bridge::setprop(&sdk_path, &serial, "persist.radio.meid", v)?; }
+    if let Some(v) = &phone_number { adb_bridge::setprop(&sdk_path, &serial, "gsm.sim.phone_number", v)?; }
+    if let Some(v) = &sim_operator {
+        adb_bridge::setprop(&sdk_path, &serial, "gsm.sim.operator.numeric", v)?;
+        adb_bridge::setprop(&sdk_path, &serial, "gsm.operator.numeric", v)?;
+    }
+    if let Some(v) = &sim_operator_name {
+        adb_bridge::setprop(&sdk_path, &serial, "gsm.sim.operator.alpha", v)?;
+        adb_bridge::setprop(&sdk_path, &serial, "gsm.operator.alpha", v)?;
+    }
+    if let Some(v) = &sim_country {
+        adb_bridge::setprop(&sdk_path, &serial, "gsm.sim.operator.iso-country", v)?;
+        adb_bridge::setprop(&sdk_path, &serial, "gsm.operator.iso-country", v)?;
+    }
+    if let Some(v) = &sim_serial { adb_bridge::setprop(&sdk_path, &serial, "gsm.sim.serial", v)?; }
+
+    Ok(())
+}
+
 // ── Extras: Recording, Clipboard, GPS, Logcat ──
 #[tauri::command]
 fn start_screen_record(
@@ -837,6 +879,7 @@ fn main() {
             create_profile,
             delete_profile,
             apply_profile,
+            set_device_identity,
             start_screen_record,
             stop_screen_record,
             clipboard_sync,

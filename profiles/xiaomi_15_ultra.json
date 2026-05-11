@@ -7,5 +7,13 @@
   "fingerprint": "Xiaomi/shennong_global/shennong:15/AQ3A.240912.001/OS2.0.8.0.VOAEUXM:user/release-keys",
   "dpi": 520,
   "resolution_w": 1440,
-  "resolution_h": 3200
+  "resolution_h": 3200,
+  "imei": "357656018545077",
+  "imei2": "357656018545085",
+  "meid": "30262259786102",
+  "phone_number": "+905239315731",
+  "sim_operator": "28601",
+  "sim_operator_name": "Turkcell",
+  "sim_country": "tr",
+  "sim_serial": "8904575109974257997"
 }

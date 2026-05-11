@@ -7,5 +7,13 @@
   "fingerprint": "Xiaomi/houji_global/houji:14/UKQ1.230917.001/V816.0.4.0.UNCEUXM:user/release-keys",
   "dpi": 460,
   "resolution_w": 1200,
-  "resolution_h": 2670
+  "resolution_h": 2670,
+  "imei": "352648750768533",
+  "imei2": "352648750768541",
+  "meid": "76452278679319",
+  "phone_number": "+905822429495",
+  "sim_operator": "28601",
+  "sim_operator_name": "Turkcell",
+  "sim_country": "tr",
+  "sim_serial": "8909305540541291175"
 }

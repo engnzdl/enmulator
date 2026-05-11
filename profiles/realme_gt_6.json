@@ -7,5 +7,13 @@
   "fingerprint": "realme/RMX3851/RE54E3L1:14/UP1A.231005.007/RMX3851_14.0.0.610:user/release-keys",
   "dpi": 450,
   "resolution_w": 1264,
-  "resolution_h": 2780
+  "resolution_h": 2780,
+  "imei": "355715774583888",
+  "imei2": "355715774583896",
+  "meid": "20170160343221",
+  "phone_number": "+905922274049",
+  "sim_operator": "40445",
+  "sim_operator_name": "Airtel",
+  "sim_country": "in",
+  "sim_serial": "8904758339068433455"
 }

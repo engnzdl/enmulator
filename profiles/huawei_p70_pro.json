@@ -7,5 +7,13 @@
   "fingerprint": "HUAWEI/HBN-AL00/HWBLA:12/HUAWEIHBN-AL00/104.2.0.198C00:user/release-keys",
   "dpi": 460,
   "resolution_w": 1260,
-  "resolution_h": 2720
+  "resolution_h": 2720,
+  "imei": "357907523061666",
+  "imei2": "357907523061674",
+  "meid": "90978926706167",
+  "phone_number": "+905665902743",
+  "sim_operator": "310260",
+  "sim_operator_name": "T-Mobile",
+  "sim_country": "us",
+  "sim_serial": "8909123170989980431"
 }

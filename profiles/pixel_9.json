@@ -7,5 +7,13 @@
   "fingerprint": "google/tokay/tokay:15/AP4A.241205.013/12768715:user/release-keys",
   "dpi": 420,
   "resolution_w": 1080,
-  "resolution_h": 2424
+  "resolution_h": 2424,
+  "imei": "356613881149900",
+  "imei2": "356613881149918",
+  "meid": "32522347843726",
+  "phone_number": "+905726004881",
+  "sim_operator": "310260",
+  "sim_operator_name": "T-Mobile",
+  "sim_country": "us",
+  "sim_serial": "8907519500902098235"
 }

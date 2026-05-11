@@ -7,5 +7,13 @@
   "fingerprint": "samsung/a55xxx/a55x:14/UP1A.231005.007/A556BXXU4BXJ1:user/release-keys",
   "dpi": 390,
   "resolution_w": 1080,
-  "resolution_h": 2340
+  "resolution_h": 2340,
+  "imei": "352054733327978",
+  "imei2": "352054733327986",
+  "meid": "89266587524490",
+  "phone_number": "+905614005676",
+  "sim_operator": "28603",
+  "sim_operator_name": "Turk Telekom",
+  "sim_country": "tr",
+  "sim_serial": "8905983703607285132"
 }

@@ -7,5 +7,13 @@
   "fingerprint": "Xiaomi/houji_global/houji:15/AQ3A.240912.001/OS2.0.6.0.VOCEUXM:user/release-keys",
   "dpi": 460,
   "resolution_w": 1200,
-  "resolution_h": 2670
+  "resolution_h": 2670,
+  "imei": "356986347557290",
+  "imei2": "356986347557308",
+  "meid": "63342675765386",
+  "phone_number": "+905547776109",
+  "sim_operator": "28602",
+  "sim_operator_name": "Vodafone TR",
+  "sim_country": "tr",
+  "sim_serial": "8909323618747084659"
 }

@@ -7,5 +7,13 @@
   "fingerprint": "OnePlus/CPH2573/OP5965L1:14/UKQ1.230924.001/V14.0.0.830:user/release-keys",
   "dpi": 510,
   "resolution_w": 1440,
-  "resolution_h": 3168
+  "resolution_h": 3168,
+  "imei": "357034379657925",
+  "imei2": "357034379657933",
+  "meid": "28385833827955",
+  "phone_number": "+905473489101",
+  "sim_operator": "310260",
+  "sim_operator_name": "T-Mobile",
+  "sim_country": "us",
+  "sim_serial": "8901280043569433245"
 }

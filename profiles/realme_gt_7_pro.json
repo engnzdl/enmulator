@@ -7,5 +7,13 @@
   "fingerprint": "realme/RMX5010/RE5C48L1:15/AQ3A.240912.001/R.8.0.2.0:user/release-keys",
   "dpi": 450,
   "resolution_w": 1264,
-  "resolution_h": 2780
+  "resolution_h": 2780,
+  "imei": "356487834289414",
+  "imei2": "356487834289422",
+  "meid": "43337720198818",
+  "phone_number": "+905677443272",
+  "sim_operator": "405840",
+  "sim_operator_name": "Jio",
+  "sim_country": "in",
+  "sim_serial": "8902784850832025606"
 }
