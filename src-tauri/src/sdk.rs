@@ -152,6 +152,23 @@ pub fn list_available_images(sdk_path: &PathBuf) -> Result<Vec<SystemImage>, Str
 /// The package should be in the format: "system-images;android-{api};{tag};{abi}"
 pub fn install_system_image(sdk_path: &PathBuf, package: &str) -> Result<(), String> {
     let sdkmanager = get_sdkmanager_path(sdk_path);
+    
+    // First accept all licenses
+    let _ = Command::new(&sdkmanager)
+        .args(["--licenses"])
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .and_then(|mut child| {
+            use std::io::Write;
+            // Write 'y' repeatedly to accept all licenses
+            if let Some(stdin) = child.stdin.as_mut() {
+                let _ = writeln!(stdin, "y\ny\ny\ny\ny\ny\ny\ny\ny\ny");
+            }
+            child.wait()
+        });
+    
     let output = Command::new(&sdkmanager)
         .args(["--install", package])
         .output()
@@ -159,11 +176,11 @@ pub fn install_system_image(sdk_path: &PathBuf, package: &str) -> Result<(), Str
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        // "already installed" is not an error
         if stderr.to_lowercase().contains("already installed") {
             return Ok(());
         }
-        return Err(stderr.to_string());
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        return Err(format!("{}{}", stderr, stdout));
     }
     Ok(())
 }
