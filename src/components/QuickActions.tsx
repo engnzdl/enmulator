@@ -60,6 +60,7 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
         <button
           className={stateClass('shell')}
           onClick={() => {
+            console.log('Shell clicked, invoking adb_shell...');
             mark('shell', 'loading');
             invoke('adb_shell', { id: device_id, cmd: 'echo "Root: $(id -u)"' })
               .then(() => mark('shell', 'done'))
