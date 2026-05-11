@@ -10,7 +10,7 @@ interface Props {
 
 type ActionState = 'idle' | 'loading' | 'done';
 
-export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, rootEnabled, onRootToggle }: Props) {
+export default function QuickActions({ device_id, onOpenFiles, rootEnabled, onRootToggle }: Props) {
   const [states, setStates] = useState<Record<string, ActionState>>({});
   const [recording, setRecording] = useState(false);
   const [gpsOpen, setGpsOpen] = useState(false);
