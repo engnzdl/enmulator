@@ -26,17 +26,14 @@ interface CreateWizardProps {
   onCreated: () => void;
 }
 
-const STEPS = ['Device Template', 'Fingerprint Profile', 'System Image'];
+const STEPS = ['Device Profile', 'System Image'];
 
 export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizardProps) {
   // ── Step tracking ──
   const [step, setStep] = useState(0);
 
-  // ── Step 1: Name + Template ──
+  // ── Step 0: Name + Fingerprint Profile (merged) ──
   const [name, setName] = useState('');
-  const [template, setTemplate] = useState('');
-
-  // ── Step 2: Fingerprint Profile ──
   const [profiles, setProfiles] = useState<FingerprintProfile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState('');
   const [showNewProfileForm, setShowNewProfileForm] = useState(false);
@@ -53,14 +50,13 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
     resolution_h: 1920,
   });
 
-  // ── Step 3: System Image ──
+  // ── Step 1: System Image ──
   const [images, setImages] = useState<SystemImage[]>([]);
   const [apiLevel, setApiLevel] = useState<number | null>(null);
   const [abi, setAbi] = useState('');
   const [tag, setTag] = useState('');
 
   // ── UI state ──
-  const [deviceTemplates, setDeviceTemplates] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [installing, setInstalling] = useState(false);
@@ -79,23 +75,16 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
 
     Promise.all([
       invoke<SystemImage[]>('list_available_images_cmd'),
-      invoke<string[]>('list_device_templates').catch(() => [] as string[]),
       invoke<FingerprintProfile[]>('list_profiles').catch(() => [] as FingerprintProfile[]),
     ])
-      .then(([imgs, templates, fpProfiles]) => {
+      .then(([imgs, fpProfiles]) => {
         setImages(imgs);
-        setDeviceTemplates(templates || []);
         setProfiles(fpProfiles || []);
         if (imgs.length > 0) {
           const first = imgs[0];
           setApiLevel(first.api_level);
           setAbi(first.abi);
           setTag(first.tag);
-        }
-        if (templates && templates.length > 0) {
-          setTemplate(templates[0]);
-        } else {
-          setTemplate('Custom');
         }
       })
       .catch((e: any) => setError(e?.message ?? String(e)))
@@ -207,10 +196,6 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
       setError('Please select a complete system image (API, ABI, and variant)');
       return;
     }
-    if (!template) {
-      setError('Please select a device template');
-      return;
-    }
     setError('');
     setStatusMsg('');
 
@@ -229,20 +214,18 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
     }
     setInstalling(false);
 
-    // Create AVD with optional fingerprint profile
+    // Create AVD with fingerprint profile (resolution/DPI set from profile)
     setCreating(true);
     setStatusMsg('Creating device...');
     try {
       await invoke('create_device', {
         name: name.trim(),
-        profile: template,
         apiLevel,
         abi,
         tag,
         fingerprintProfile: selectedProfile || null,
       });
       setName('');
-      setTemplate(deviceTemplates.length > 0 ? deviceTemplates[0] : 'Custom');
       setSelectedProfile('');
       setStatusMsg('');
       onCreated();
@@ -296,7 +279,7 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
           </p>
         )}
 
-        {/* ═══════════════ STEP 0: Name + Device Template ═══════════════ */}
+        {/* ═══════════════ STEP 0: Device Name + Fingerprint Profile ═══════════════ */}
         {step === 0 && (
           <div className="wizard-step-body">
             <label>Device Name</label>
@@ -309,24 +292,7 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
               disabled={busy}
             />
 
-            <label>Device Template</label>
-            <select value={template} onChange={(e) => setTemplate(e.target.value)} disabled={busy}>
-              {deviceTemplates.length === 0 && <option value="Custom">Custom</option>}
-              {deviceTemplates.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-              {deviceTemplates.length > 0 && <option value="Custom">Custom</option>}
-            </select>
-            {deviceTemplates.length > 0 && (
-              <div className="image-desc">{deviceTemplates.length} device templates available</div>
-            )}
-          </div>
-        )}
-
-        {/* ═══════════════ STEP 1: Fingerprint Profile ═══════════════ */}
-        {step === 1 && (
-          <div className="wizard-step-body">
-            <label>Fingerprint Profile (optional)</label>
+            <label>Device Profile (sets resolution &amp; DPI)</label>
 
             {/* Existing profiles list */}
             {profiles.length > 0 ? (
@@ -340,7 +306,7 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
                     <div className="profile-card-main">
                       <span className="profile-card-name">{p.name}</span>
                       <span className="profile-card-meta">
-                        {p.brand} — {p.model}
+                        {p.brand} — {p.model} — {p.resolution_w}×{p.resolution_h} @ {p.dpi}dpi
                       </span>
                     </div>
                     <div className="profile-card-actions">
@@ -357,7 +323,7 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
                 ))}
               </div>
             ) : (
-              <div className="image-desc">No fingerprint profiles yet. Create one below.</div>
+              <div className="image-desc">No device profiles yet. Create one below.</div>
             )}
 
             {/* Selected profile details */}
@@ -389,7 +355,7 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
             ) : (
               <div className="new-profile-form">
                 <h4 style={{ marginBottom: '12px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  New Fingerprint Profile
+                  New Device Profile
                 </h4>
                 <label>Profile Name</label>
                 <input
@@ -488,8 +454,8 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
           </div>
         )}
 
-        {/* ═══════════════ STEP 2: System Image ═══════════════ */}
-        {step === 2 && (
+        {/* ═══════════════ STEP 1: System Image ═══════════════ */}
+        {step === 1 && (
           <div className="wizard-step-body">
             <label>API Level</label>
             <select
