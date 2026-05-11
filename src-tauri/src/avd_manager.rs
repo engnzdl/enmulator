@@ -50,8 +50,6 @@ pub fn create_avd(
             "create", "avd", "--force",
             "--name", &avd_name,
             "--package", &package,
-            "--tag", tag,
-            "--abi", abi,
             "--device", &device_def,
             "--path", avd_path.to_str().unwrap_or("/tmp"),
         ])
