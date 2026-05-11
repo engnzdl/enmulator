@@ -1,0 +1,22 @@
+{
+  "productName": "Enmulator",
+  "version": "0.1.0",
+  "identifier": "com.enmulator.app",
+  "build": {
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Enmulator",
+        "width": 1100,
+        "height": 750,
+        "resizable": true
+      }
+    ]
+  },
+  "bundle": {
+    "active": false
+  }
+}
