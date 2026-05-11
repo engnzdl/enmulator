@@ -814,6 +814,51 @@ button:disabled {
   opacity: 0.4;
 }
 
+/* ProxyCard component */
+.proxy-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.proxy-card-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.proxy-input {
+  background: var(--bg-input);
+  border: var(--border-input);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: 'Inter', monospace;
+  outline: none;
+  transition: border-color var(--transition-fast);
+  width: 140px;
+}
+
+.proxy-input:focus {
+  border-color: var(--accent);
+}
+
+.proxy-input:disabled {
+  opacity: 0.4;
+}
+
+.proxy-card-row span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.proxy-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 .proxy-controls span {
   color: var(--text-muted);
   font-size: 12px;

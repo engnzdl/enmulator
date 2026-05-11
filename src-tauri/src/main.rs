@@ -658,6 +658,91 @@ fn bypass_detection(
     bypass::bypass_detection(&sdk_path, &serial)
 }
 
+// ── Cert Installer ──
+
+#[tauri::command]
+fn install_cert(
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+    cert_path: String,
+) -> Result<String, String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    if dev.status != "running" {
+        return Err("Device must be running".into());
+    }
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let serial = format!("emulator-{}", dev.port);
+    let adb = sdk::get_adb_path(&sdk_path);
+
+    // Get the cert filename from the path
+    let cert_file = std::path::Path::new(&cert_path)
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .ok_or("Invalid cert path")?;
+
+    // 1. adb root
+    let root_out = std::process::Command::new(&adb)
+        .args(["-s", &serial, "root"])
+        .output()
+        .map_err(|e| format!("adb root error: {}", e))?;
+    if !root_out.status.success() {
+        return Err(format!("adb root failed: {}", String::from_utf8_lossy(&root_out.stderr)));
+    }
+
+    // 2. adb remount (makes /system rw)
+    let remount_out = std::process::Command::new(&adb)
+        .args(["-s", &serial, "remount"])
+        .output()
+        .map_err(|e| format!("adb remount error: {}", e))?;
+    if !remount_out.status.success() {
+        return Err(format!("adb remount failed: {}. Device must be rooted.", String::from_utf8_lossy(&remount_out.stderr)));
+    }
+
+    // 3. Push cert to /sdcard/
+    let push_out = std::process::Command::new(&adb)
+        .args(["-s", &serial, "push", &cert_path, &format!("/sdcard/{}", cert_file)])
+        .output()
+        .map_err(|e| format!("adb push error: {}", e))?;
+    if !push_out.status.success() {
+        return Err(format!("adb push failed: {}", String::from_utf8_lossy(&push_out.stderr)));
+    }
+
+    // 4. Copy cert to /system/etc/security/cacerts/
+    let cp_out = std::process::Command::new(&adb)
+        .args(["-s", &serial, "shell", "cp", &format!("/sdcard/{}", cert_file), &format!("/system/etc/security/cacerts/{}", cert_file)])
+        .output()
+        .map_err(|e| format!("adb shell cp error: {}", e))?;
+    if !cp_out.status.success() {
+        return Err(format!("copy cert failed: {}", String::from_utf8_lossy(&cp_out.stderr)));
+    }
+
+    // 5. Set permissions 644
+    let chmod_out = std::process::Command::new(&adb)
+        .args(["-s", &serial, "shell", "chmod", "644", &format!("/system/etc/security/cacerts/{}", cert_file)])
+        .output()
+        .map_err(|e| format!("adb shell chmod error: {}", e))?;
+    if !chmod_out.status.success() {
+        return Err(format!("chmod failed: {}", String::from_utf8_lossy(&chmod_out.stderr)));
+    }
+
+    // 6. Remount /system ro
+    let ro_out = std::process::Command::new(&adb)
+        .args(["-s", &serial, "shell", "mount", "-o", "remount,ro", "/system"])
+        .output()
+        .map_err(|e| format!("adb shell mount ro error: {}", e))?;
+    if !ro_out.status.success() {
+        return Err(format!("remount ro failed: {}", String::from_utf8_lossy(&ro_out.stderr)));
+    }
+
+    // 7. Clean up /sdcard/ copy
+    let _ = std::process::Command::new(&adb)
+        .args(["-s", &serial, "shell", "rm", &format!("/sdcard/{}", cert_file)])
+        .output();
+
+    Ok(format!("Certificate {} installed to /system/etc/security/cacerts/", cert_file))
+}
+
 fn main() {
     let config_path = PathBuf::from("config.json");
     let mut cfg = config::load(&config_path);
@@ -732,6 +817,7 @@ fn main() {
             delete_snapshot_cmd,
             toggle_root,
             bypass_detection,
+            install_cert,
         ])
         .run(tauri::generate_context!())
         .expect("error while running enmulator");
