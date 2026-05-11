@@ -180,7 +180,11 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
       <div className="modal">
         <h2>New Device</h2>
 
-        {loading && <p className="status-msg">Loading available system images...</p>}
+        {loading && (
+          <p className="status-msg">
+            <span className="status-spinner" /> Loading available system images...
+          </p>
+        )}
 
         <label>Name</label>
         <input
@@ -236,16 +240,22 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
         </select>
 
         {currentDescription && (
-          <p className="image-desc">{currentDescription}</p>
+          <div className="image-desc">{currentDescription}</div>
         )}
 
-        {statusMsg && <p className="status-msg">{statusMsg}</p>}
+        {statusMsg && <p className="status-msg"><span className="status-spinner" /> {statusMsg}</p>}
         {error && <p className="error-msg">{error}</p>}
 
         <div className="modal-actions">
-          <button onClick={onClose} disabled={creating || installing}>Cancel</button>
-          <button className="btn-primary" onClick={handleCreate} disabled={busy || apiLevel === null}>
-            {installing ? 'Downloading image...' : creating ? 'Creating...' : 'Create'}
+          <button className="btn-secondary" onClick={onClose} disabled={creating || installing}>
+            Cancel
+          </button>
+          <button
+            className="btn-primary"
+            onClick={handleCreate}
+            disabled={busy || apiLevel === null}
+          >
+            {installing ? 'Downloading...' : creating ? 'Creating...' : 'Create Device'}
           </button>
         </div>
       </div>
