@@ -14,35 +14,47 @@ interface CreateWizardProps {
   onCreated: () => void;
 }
 
-const PROFILES = ['pixel_8_us', 'samsung_s24_tr', 'Custom'];
-
 export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizardProps) {
   const [name, setName] = useState('');
-  const [profile, setProfile] = useState(PROFILES[0]);
+  const [profile, setProfile] = useState('');
   const [apiLevel, setApiLevel] = useState<number | null>(null);
   const [abi, setAbi] = useState('');
   const [tag, setTag] = useState('');
   const [images, setImages] = useState<SystemImage[]>([]);
+  const [deviceTemplates, setDeviceTemplates] = useState<string[]>([]);
+  const [fingerprintProfiles, setFingerprintProfiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [error, setError] = useState('');
   const [statusMsg, setStatusMsg] = useState('');
 
-  // Fetch available system images when wizard opens
+  // Fetch available system images, device templates, and fingerprint profiles when wizard opens
   useEffect(() => {
     if (!isOpen) return;
     setError('');
     setStatusMsg('');
     setLoading(true);
-    invoke<SystemImage[]>('list_available_images_cmd')
-      .then((imgs) => {
+
+    Promise.all([
+      invoke<SystemImage[]>('list_available_images_cmd'),
+      invoke<string[]>('list_device_templates').catch(() => [] as string[]),
+      invoke<string[]>('list_profiles').catch(() => [] as string[]),
+    ])
+      .then(([imgs, templates, fpProfiles]) => {
         setImages(imgs);
+        setDeviceTemplates(templates || []);
+        setFingerprintProfiles(fpProfiles || []);
         if (imgs.length > 0) {
           const first = imgs[0];
           setApiLevel(first.api_level);
           setAbi(first.abi);
           setTag(first.tag);
+        }
+        if (templates && templates.length > 0) {
+          setProfile(templates[0]);
+        } else {
+          setProfile('Custom');
         }
       })
       .catch((e: any) => setError(e?.message ?? String(e)))
@@ -123,6 +135,10 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
       setError('Please select a complete system image (API, ABI, and variant)');
       return;
     }
+    if (!profile) {
+      setError('Please select a device template');
+      return;
+    }
     setError('');
     setStatusMsg('');
 
@@ -153,7 +169,7 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
         tag,
       });
       setName('');
-      setProfile(PROFILES[0]);
+      setProfile(deviceTemplates.length > 0 ? deviceTemplates[0] : 'Custom');
       setStatusMsg('');
       onCreated();
       onClose();
@@ -196,12 +212,27 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
           disabled={busy}
         />
 
-        <label>Profile</label>
+        <label>Device Template</label>
         <select value={profile} onChange={(e) => setProfile(e.target.value)} disabled={busy}>
-          {PROFILES.map((p) => (
-            <option key={p} value={p}>{p}</option>
+          {deviceTemplates.length === 0 && <option value="Custom">Custom</option>}
+          {deviceTemplates.map((t) => (
+            <option key={t} value={t}>{t}</option>
           ))}
+          {deviceTemplates.length > 0 && <option value="Custom">Custom</option>}
         </select>
+        {deviceTemplates.length > 0 && (
+          <div className="image-desc">{deviceTemplates.length} device templates available</div>
+        )}
+
+        {fingerprintProfiles.length > 0 && (
+          <>
+            <label>Fingerprint Profiles (apply after creation)</label>
+            <div className="image-desc">
+              {fingerprintProfiles.slice(0, 6).join(', ')}
+              {fingerprintProfiles.length > 6 && ` +${fingerprintProfiles.length - 6} more`}
+            </div>
+          </>
+        )}
 
         <label>API Level</label>
         <select
