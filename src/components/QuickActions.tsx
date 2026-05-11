@@ -58,17 +58,22 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
       <div className="quick-actions">
         <button
           className={stateClass('shell')}
-          onClick={() => act('shell', 'adb_shell', { cmd: 'id' })}
-          title="ADB Shell (id)"
+          onClick={() => {
+            mark('shell', 'loading');
+            invoke('adb_shell', { id: device_id, cmd: 'echo "Root: $(id -u)"' })
+              .then(() => mark('shell', 'done'))
+              .catch(() => mark('shell', 'idle'));
+          }}
+          title="ADB Shell test"
         >
           <span className="qa-btn-icon">🔧</span> Shell
         </button>
         <button
           className={stateClass('profile')}
-          onClick={() => act('profile', 'apply_profile', { profile_name: 'pixel_5' })}
-          title="Apply Profile"
+          onClick={() => act('profile', 'list_profiles')}
+          title="List Profiles"
         >
-          <span className="qa-btn-icon">📱</span> Profile
+          <span className="qa-btn-icon">📱</span> Profiles
         </button>
         <button
           className={`qa-btn${recording ? ' recording' : ''}${states['record'] === 'loading' ? ' loading' : ''}${states['record'] === 'done' ? ' done' : ''}`}
