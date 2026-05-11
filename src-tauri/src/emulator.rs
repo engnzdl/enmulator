@@ -10,8 +10,17 @@ pub struct EmulatorStore {
 }
 
 impl EmulatorStore {
-    pub fn new() -> Self {
-        Self { processes: Mutex::new(HashMap::new()), next_port: Mutex::new(5554) }
+    pub fn new(existing_devices: &[crate::device::Device]) -> Self {
+        let max_port = existing_devices
+            .iter()
+            .map(|d| d.port)
+            .filter(|p| *p > 0)
+            .max()
+            .unwrap_or(5552); // 5552 so first fresh start uses 5554
+        Self {
+            processes: Mutex::new(HashMap::new()),
+            next_port: Mutex::new(max_port.saturating_add(2)),
+        }
     }
 
     pub fn start(&self, sdk_path: &PathBuf, avd_name: &str, headless: bool) -> Result<u16, String> {

@@ -769,7 +769,8 @@ fn main() {
     let devices_dir = PathBuf::from(&cfg.devices_dir);
 
     let store = Arc::new(DeviceStore::new(devices_dir));
-    let emu_store = Arc::new(EmulatorStore::new());
+    let existing = store.list();
+    let emu_store = Arc::new(EmulatorStore::new(&existing));
     let rec_store = Arc::new(RecordingStore::new());
     let proxy_store = Arc::new(ProxyStore::new());
 
