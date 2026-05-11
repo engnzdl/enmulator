@@ -14,6 +14,9 @@ type ActionState = 'idle' | 'loading' | 'done';
 export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, rootEnabled, onRootToggle }: Props) {
   const [states, setStates] = useState<Record<string, ActionState>>({});
   const [recording, setRecording] = useState(false);
+  const [gpsOpen, setGpsOpen] = useState(false);
+  const [gpsLat, setGpsLat] = useState('41.0082');
+  const [gpsLon, setGpsLon] = useState('28.9784');
 
   const mark = (key: string, s: ActionState) => {
     setStates((prev) => ({ ...prev, [key]: s }));
@@ -23,18 +26,12 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
   const act = async (key: string, cmd: string, args?: Record<string, unknown>) => {
     mark(key, 'loading');
     try {
-      const result = await invoke(cmd, { id: device_id, ...args });
-      console.log(`[${cmd}]`, result);
+      await invoke(cmd, { id: device_id, ...args });
       mark(key, 'done');
-    } catch (e: any) {
-      console.error(`[${cmd}] failed:`, e?.message ?? e);
+    } catch (e) {
+      console.error(`${cmd} failed:`, e);
       mark(key, 'idle');
     }
-  };
-
-  const stateClass = (key: string) => {
-    const s = states[key] || 'idle';
-    return `qa-btn${s === 'loading' ? ' loading' : ''}${s === 'done' ? ' done' : ''}`;
   };
 
   const handleRecord = async () => {
@@ -54,31 +51,28 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
     }
   };
 
+  const handleGps = async () => {
+    const lat = parseFloat(gpsLat);
+    const lon = parseFloat(gpsLon);
+    if (isNaN(lat) || isNaN(lon)) return;
+    mark('gps', 'loading');
+    try {
+      await invoke('gps_set', { id: device_id, lat, lon });
+      mark('gps', 'done');
+      setGpsOpen(false);
+    } catch {
+      mark('gps', 'idle');
+    }
+  };
+
+  const stateClass = (key: string) => {
+    const s = states[key] || 'idle';
+    return `qa-btn${s === 'loading' ? ' loading' : ''}${s === 'done' ? ' done' : ''}`;
+  };
+
   return (
     <div>
       <div className="quick-actions">
-        <button
-          className={stateClass('shell')}
-          onClick={async () => {
-            mark('shell', 'loading');
-            try {
-              await invoke('adb_shell', { id: device_id, cmd: 'id' });
-              mark('shell', 'done');
-            } catch {
-              mark('shell', 'idle');
-            }
-          }}
-          title="ADB Shell test"
-        >
-          <span className="qa-btn-icon">🔧</span> Shell
-        </button>
-        <button
-          className={stateClass('profile')}
-          onClick={() => act('profile', 'list_profiles')}
-          title="List Profiles"
-        >
-          <span className="qa-btn-icon">📱</span> Profiles
-        </button>
         <button
           className={`qa-btn${recording ? ' recording' : ''}${states['record'] === 'loading' ? ' loading' : ''}${states['record'] === 'done' ? ' done' : ''}`}
           onClick={handleRecord}
@@ -86,20 +80,15 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
         >
           <span className="qa-btn-icon">{recording ? '⏹' : '⏺'}</span> {recording ? 'Stop' : 'Record'}
         </button>
+
         <button
           className={stateClass('gps')}
-          onClick={() => act('gps', 'gps_set', { lat: 37.7749, lon: -122.4194 })}
-          title="Set GPS (San Francisco)"
+          onClick={() => setGpsOpen(true)}
+          title="Set GPS Location"
         >
           <span className="qa-btn-icon">📍</span> GPS
         </button>
-        <button
-          className={stateClass('log')}
-          onClick={() => act('log', 'logcat_start')}
-          title="Start Logcat"
-        >
-          <span className="qa-btn-icon">📋</span> Log
-        </button>
+
         <button
           className={stateClass('clipboard')}
           onClick={() => act('clipboard', 'clipboard_sync', { direction: 'get' })}
@@ -108,19 +97,11 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
           <span className="qa-btn-icon">📋</span> Clip
         </button>
 
-        <button
-          className="qa-btn"
-          onClick={onOpenFiles}
-          title="File Explorer"
-        >
+        <button className="qa-btn" onClick={onOpenFiles} title="File Explorer">
           <span className="qa-btn-icon">📁</span> Files
         </button>
 
-        <button
-          className="qa-btn"
-          onClick={onOpenSnapshots}
-          title="Snapshots"
-        >
+        <button className="qa-btn" onClick={onOpenSnapshots} title="Snapshots">
           <span className="qa-btn-icon">📸</span> Snapshots
         </button>
 
@@ -139,13 +120,32 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
         )}
 
         <button
-          className={`qa-btn${states['bypass'] === 'loading' ? ' loading' : ''}${states['bypass'] === 'done' ? ' done' : ''}`}
+          className={stateClass('bypass')}
           onClick={() => act('bypass', 'bypass_detection', { id: device_id })}
-          title="Hide emulator detection (build.props)"
+          title="Hide emulator detection"
         >
           <span className="qa-btn-icon">🛡️</span> Emu Detection Bypass
         </button>
       </div>
+
+      {/* GPS Popup */}
+      {gpsOpen && (
+        <div className="modal-overlay" onClick={() => setGpsOpen(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ minWidth: 320 }}>
+            <h2>Set GPS Location</h2>
+            <label>Latitude</label>
+            <input type="text" value={gpsLat} onChange={e => setGpsLat(e.target.value)} placeholder="41.0082" />
+            <label>Longitude</label>
+            <input type="text" value={gpsLon} onChange={e => setGpsLon(e.target.value)} placeholder="28.9784" />
+            <div className="modal-actions" style={{ marginTop: 16 }}>
+              <button className="btn-secondary" onClick={() => setGpsOpen(false)}>Cancel</button>
+              <button className="btn-primary" onClick={handleGps} disabled={states['gps'] === 'loading'}>
+                {states['gps'] === 'loading' ? 'Setting...' : 'Set Location'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
