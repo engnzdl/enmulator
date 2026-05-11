@@ -427,6 +427,108 @@ fn delete_snapshot_cmd(
     adb_bridge::delete_snapshot(&sdk_path, &serial, &name)
 }
 
+// ── Batch operations ──
+
+#[derive(Debug, Serialize)]
+struct BatchResult {
+    success: Vec<String>,
+    failed: Vec<BatchFailure>,
+}
+
+#[derive(Debug, Serialize)]
+struct BatchFailure {
+    id: String,
+    error: String,
+}
+
+#[tauri::command]
+async fn batch_start(
+    config: tauri::State<'_, Config>,
+    store: tauri::State<'_, Arc<DeviceStore>>,
+    emu_store: tauri::State<'_, Arc<EmulatorStore>>,
+    ids: Vec<String>,
+) -> Result<BatchResult, String> {
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let mut result = BatchResult { success: vec![], failed: vec![] };
+
+    for id in &ids {
+        let dev = match store.get(id) {
+            Some(d) => d,
+            None => {
+                result.failed.push(BatchFailure { id: id.clone(), error: "Device not found".into() });
+                continue;
+            }
+        };
+        if dev.status == "running" {
+            result.failed.push(BatchFailure { id: id.clone(), error: "Already running".into() });
+            continue;
+        }
+        match emu_store.start(&sdk_path, &dev.avd_name, false) {
+            Ok(port) => {
+                store.update_port(id, port);
+                store.update_status(id, "running");
+                result.success.push(id.clone());
+            }
+            Err(e) => {
+                result.failed.push(BatchFailure { id: id.clone(), error: e });
+            }
+        }
+    }
+    Ok(result)
+}
+
+#[tauri::command]
+async fn batch_stop(
+    config: tauri::State<'_, Config>,
+    store: tauri::State<'_, Arc<DeviceStore>>,
+    emu_store: tauri::State<'_, Arc<EmulatorStore>>,
+    ids: Vec<String>,
+) -> Result<BatchResult, String> {
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let mut result = BatchResult { success: vec![], failed: vec![] };
+
+    for id in &ids {
+        let dev = match store.get(id) {
+            Some(d) => d,
+            None => {
+                result.failed.push(BatchFailure { id: id.clone(), error: "Device not found".into() });
+                continue;
+            }
+        };
+        if dev.status != "running" {
+            result.failed.push(BatchFailure { id: id.clone(), error: "Not running".into() });
+            continue;
+        }
+        emu_store.stop(&sdk_path, &dev.avd_name, dev.port);
+        store.update_status(id, "stopped");
+        result.success.push(id.clone());
+    }
+    Ok(result)
+}
+
+#[tauri::command]
+async fn batch_delete(
+    config: tauri::State<'_, Config>,
+    store: tauri::State<'_, Arc<DeviceStore>>,
+    emu_store: tauri::State<'_, Arc<EmulatorStore>>,
+    ids: Vec<String>,
+) -> Result<BatchResult, String> {
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let mut result = BatchResult { success: vec![], failed: vec![] };
+
+    for id in &ids {
+        // Stop if running
+        if let Some(dev) = store.get(id) {
+            if dev.status == "running" {
+                emu_store.stop(&sdk_path, &dev.avd_name, dev.port);
+            }
+        }
+        store.remove(id);
+        result.success.push(id.clone());
+    }
+    Ok(result)
+}
+
 // ── Config ──
 #[tauri::command]
 fn get_config(config: tauri::State<Config>) -> Config {
@@ -474,6 +576,9 @@ fn main() {
             clone_device,
             start_device,
             stop_device,
+            batch_start,
+            batch_stop,
+            batch_delete,
             adb_shell,
             install_apk,
             set_device_proxy,

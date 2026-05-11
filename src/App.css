@@ -88,11 +88,30 @@ button:disabled {
   background: #16213e;
   border-radius: 10px;
   margin-bottom: 8px;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  border: 2px solid transparent;
 }
 
 .device-card:hover {
   background: #1c2c50;
+}
+
+.device-card.select-mode {
+  cursor: pointer;
+}
+
+.device-card.device-card-selected {
+  border-color: #4f46e5;
+  background: #1e2d52;
+}
+
+.device-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: #4f46e5;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-right: 16px;
 }
 
 .device-info {
@@ -508,4 +527,47 @@ button:disabled {
   flex-shrink: 0;
   min-width: 60px;
   text-align: right;
+}
+
+/* ── Batch Toolbar ── */
+
+.batch-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: #0f1629;
+  border-radius: 10px;
+  border: 1px solid #4f46e5;
+  margin-bottom: 12px;
+}
+
+.batch-count {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #818cf8;
+  margin-right: 8px;
+}
+
+.btn-batch {
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  background: #2d2d5e;
+  color: #ccc;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.btn-batch:hover {
+  background: #3d3d7e;
+  color: #fff;
+}
+
+.btn-batch-danger {
+  background: #5c1a1a;
+}
+
+.btn-batch-danger:hover {
+  background: #7f1d1d;
 }
