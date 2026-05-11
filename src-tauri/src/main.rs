@@ -7,13 +7,16 @@ mod avd_manager;
 mod emulator;
 mod adb_bridge;
 mod fingerprint;
+mod extras;
+mod api_server;
 
 use config::Config;
 use device::{Device, DeviceStore};
 use emulator::EmulatorStore;
+use extras::RecordingStore;
 use fingerprint::FingerprintProfile;
 use std::path::PathBuf;
-use tauri::Manager;
+use std::sync::{Arc, Mutex};
 
 // ── SDK ──
 #[tauri::command]
@@ -28,13 +31,13 @@ fn detect_sdk_cmd(config: tauri::State<Config>) -> Result<String, String> {
 
 // ── Device CRUD ──
 #[tauri::command]
-fn list_devices(store: tauri::State<DeviceStore>) -> Vec<Device> {
+fn list_devices(store: tauri::State<Arc<DeviceStore>>) -> Vec<Device> {
     store.list()
 }
 
 #[tauri::command]
 fn create_device(
-    store: tauri::State<DeviceStore>,
+    store: tauri::State<Arc<DeviceStore>>,
     config: tauri::State<Config>,
     name: String,
     profile: String,
@@ -51,14 +54,14 @@ fn create_device(
 }
 
 #[tauri::command]
-fn delete_device(store: tauri::State<DeviceStore>, id: String) -> Result<(), String> {
+fn delete_device(store: tauri::State<Arc<DeviceStore>>, id: String) -> Result<(), String> {
     store.remove(&id);
     Ok(())
 }
 
 #[tauri::command]
 fn clone_device(
-    store: tauri::State<DeviceStore>,
+    store: tauri::State<Arc<DeviceStore>>,
     source_id: String,
     target_name: String,
 ) -> Result<Device, String> {
@@ -106,8 +109,8 @@ fn clone_device(
 #[tauri::command]
 fn start_device(
     config: tauri::State<Config>,
-    store: tauri::State<DeviceStore>,
-    emu_store: tauri::State<EmulatorStore>,
+    store: tauri::State<Arc<DeviceStore>>,
+    emu_store: tauri::State<Arc<EmulatorStore>>,
     id: String,
     headless: bool,
 ) -> Result<u16, String> {
@@ -122,8 +125,8 @@ fn start_device(
 #[tauri::command]
 fn stop_device(
     config: tauri::State<Config>,
-    store: tauri::State<DeviceStore>,
-    emu_store: tauri::State<EmulatorStore>,
+    store: tauri::State<Arc<DeviceStore>>,
+    emu_store: tauri::State<Arc<EmulatorStore>>,
     id: String,
 ) -> Result<(), String> {
     let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
@@ -135,7 +138,7 @@ fn stop_device(
 
 // ── ADB ──
 #[tauri::command]
-fn adb_shell(config: tauri::State<Config>, store: tauri::State<DeviceStore>, id: String, cmd: String) -> Result<String, String> {
+fn adb_shell(config: tauri::State<Config>, store: tauri::State<Arc<DeviceStore>>, id: String, cmd: String) -> Result<String, String> {
     let dev = store.get(&id).ok_or("Device not found")?;
     let serial = format!("emulator-{}", dev.port);
     let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
@@ -143,7 +146,7 @@ fn adb_shell(config: tauri::State<Config>, store: tauri::State<DeviceStore>, id:
 }
 
 #[tauri::command]
-fn install_apk(config: tauri::State<Config>, store: tauri::State<DeviceStore>, id: String, apk_path: String) -> Result<String, String> {
+fn install_apk(config: tauri::State<Config>, store: tauri::State<Arc<DeviceStore>>, id: String, apk_path: String) -> Result<String, String> {
     let dev = store.get(&id).ok_or("Device not found")?;
     let serial = format!("emulator-{}", dev.port);
     let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
@@ -159,7 +162,7 @@ fn list_profiles() -> Vec<FingerprintProfile> {
 #[tauri::command]
 fn apply_profile(
     config: tauri::State<Config>,
-    store: tauri::State<DeviceStore>,
+    store: tauri::State<Arc<DeviceStore>>,
     device_id: String,
     profile_name: String,
 ) -> Result<(), String> {
@@ -172,6 +175,92 @@ fn apply_profile(
     let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
     let serial = format!("emulator-{}", dev.port);
     fingerprint::apply_to_device(&sdk_path, &serial, &profile)
+}
+
+// ── Extras: Recording, Clipboard, GPS, Logcat ──
+#[tauri::command]
+fn start_screen_record(
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    rec_store: tauri::State<Arc<RecordingStore>>,
+    id: String,
+) -> Result<(), String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    let serial = format!("emulator-{}", dev.port);
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    extras::start_recording(&sdk_path, &serial, &id, &rec_store)
+}
+
+#[tauri::command]
+fn stop_screen_record(
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    rec_store: tauri::State<Arc<RecordingStore>>,
+    id: String,
+) -> Result<String, String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    let serial = format!("emulator-{}", dev.port);
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let local_dir = std::env::temp_dir().join("enmulator_recordings");
+    extras::stop_recording(&sdk_path, &serial, &id, &rec_store, &local_dir)
+        .map(|p| p.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+fn clipboard_sync(
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+    direction: String,
+    text: Option<String>,
+) -> Result<String, String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    let serial = format!("emulator-{}", dev.port);
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    extras::sync_clipboard(&sdk_path, &serial, &direction, text.as_deref())
+}
+
+#[tauri::command]
+fn gps_set(
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+    lat: f64,
+    lon: f64,
+) -> Result<(), String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    let serial = format!("emulator-{}", dev.port);
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    extras::set_gps(&sdk_path, &serial, lat, lon)
+}
+
+#[tauri::command]
+fn logcat_start(
+    app: tauri::AppHandle,
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+) -> Result<(), String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    let serial = format!("emulator-{}", dev.port);
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    extras::stream_logcat(&sdk_path, &serial, app).map(|_| ())
+}
+
+// ── API Server ──
+#[tauri::command]
+fn start_api_server(
+    api_state: tauri::State<Arc<api_server::AppState>>,
+    port: u16,
+) -> Result<String, String> {
+    api_server::start_api_server(api_state.inner().clone(), port)?;
+    Ok(format!("API server started on port {}", port))
+}
+
+#[tauri::command]
+fn stop_api_server() -> Result<String, String> {
+    api_server::stop_api_server()?;
+    Ok("API server stopped".to_string())
 }
 
 // ── Config ──
@@ -192,14 +281,24 @@ fn main() {
     let config_path = PathBuf::from("config.json");
     let cfg = config::load(&config_path);
     let devices_dir = PathBuf::from(&cfg.devices_dir);
-    let store = DeviceStore::new(devices_dir);
-    let emu_store = EmulatorStore::new();
+
+    let store = Arc::new(DeviceStore::new(devices_dir));
+    let emu_store = Arc::new(EmulatorStore::new());
+    let rec_store = Arc::new(RecordingStore::new());
+
+    let api_state = Arc::new(api_server::AppState {
+        device_store: store.clone(),
+        emulator_store: emu_store.clone(),
+        config: Arc::new(Mutex::new(cfg.clone())),
+    });
 
     tauri::Builder::default()
         .manage(cfg)
         .manage(config_path)
         .manage(store)
         .manage(emu_store)
+        .manage(rec_store)
+        .manage(api_state)
         .invoke_handler(tauri::generate_handler![
             detect_sdk_cmd,
             list_devices,
@@ -212,6 +311,13 @@ fn main() {
             install_apk,
             list_profiles,
             apply_profile,
+            start_screen_record,
+            stop_screen_record,
+            clipboard_sync,
+            gps_set,
+            logcat_start,
+            start_api_server,
+            stop_api_server,
             get_config,
             set_sdk_path,
         ])
