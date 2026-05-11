@@ -655,6 +655,32 @@ fn set_sdk_path(config: tauri::State<Config>, config_path_state: tauri::State<Pa
 }
 
 #[tauri::command]
+fn update_config(
+    config: tauri::State<Config>,
+    config_path: tauri::State<PathBuf>,
+    sdk_path: Option<String>,
+    devices_dir: Option<String>,
+    api_server_port: Option<u16>,
+    default_headless: Option<bool>,
+    auto_start_api: Option<bool>,
+    default_api_level: Option<u8>,
+    default_abi: Option<String>,
+    default_tag: Option<String>,
+) -> Result<(), String> {
+    let mut cfg = config.inner().clone();
+    if let Some(v) = sdk_path { cfg.sdk_path = Some(v); }
+    if let Some(v) = devices_dir { cfg.devices_dir = v; }
+    if let Some(v) = api_server_port { cfg.api_server_port = v; }
+    if let Some(v) = default_headless { cfg.default_headless = v; }
+    if let Some(v) = auto_start_api { cfg.auto_start_api = v; }
+    if let Some(v) = default_api_level { cfg.default_api_level = v; }
+    if let Some(v) = default_abi { cfg.default_abi = v; }
+    if let Some(v) = default_tag { cfg.default_tag = v; }
+    config::save(&config_path, &cfg);
+    Ok(())
+}
+
+#[tauri::command]
 fn bypass_detection(
     config: tauri::State<Config>,
     store: tauri::State<Arc<DeviceStore>>,
@@ -820,6 +846,7 @@ fn main() {
             stop_api_server,
             get_config,
             set_sdk_path,
+            update_config,
             list_device_templates,
             list_files,
             pull_file,
