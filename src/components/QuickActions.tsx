@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 interface Props {
   device_id: string;
   onOpenFiles?: () => void;
+  onOpenSnapshots?: () => void;
 }
 
 type ActionState = 'idle' | 'loading' | 'done';
@@ -14,7 +15,7 @@ interface ProxyConfig {
   enabled: boolean;
 }
 
-export default function QuickActions({ device_id, onOpenFiles }: Props) {
+export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots }: Props) {
   const [states, setStates] = useState<Record<string, ActionState>>({});
   const [recording, setRecording] = useState(false);
   const [proxyHost, setProxyHost] = useState('10.0.2.2');
@@ -131,6 +132,16 @@ export default function QuickActions({ device_id, onOpenFiles }: Props) {
           title="File Explorer"
         >
           📁 Files
+        </button>
+      )}
+
+      {onOpenSnapshots && (
+        <button
+          className="qa-btn"
+          onClick={onOpenSnapshots}
+          title="Snapshots"
+        >
+          📸 Snapshots
         </button>
       )}
 
