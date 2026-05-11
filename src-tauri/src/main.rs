@@ -184,9 +184,10 @@ fn start_device(
         let sdk = sdk_path.clone();
         std::thread::spawn(move || {
             let serial = format!("emulator-{}", port);
+            let adb = sdk::get_adb_path(&sdk);
             // Wait for boot (max 90s)
             for _ in 0..45 {
-                if let Ok(output) = std::process::Command::new(sdk.join("platform-tools/adb"))
+                if let Ok(output) = std::process::Command::new(&adb)
                     .args(["-s", &serial, "shell", "getprop", "sys.boot_completed"])
                     .output()
                 {

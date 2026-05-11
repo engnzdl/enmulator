@@ -12,11 +12,33 @@ pub struct SystemImage {
     pub description: String,
 }
 
+/// Platform-aware binary name helpers.
+/// On Windows, Android SDK tools use .exe or .bat extensions.
+#[cfg(target_os = "windows")]
+fn adb_bin() -> &'static str { "adb.exe" }
+#[cfg(not(target_os = "windows"))]
+fn adb_bin() -> &'static str { "adb" }
+
+#[cfg(target_os = "windows")]
+fn emulator_bin() -> &'static str { "emulator.exe" }
+#[cfg(not(target_os = "windows"))]
+fn emulator_bin() -> &'static str { "emulator" }
+
+#[cfg(target_os = "windows")]
+fn avdmanager_bin() -> &'static str { "avdmanager.bat" }
+#[cfg(not(target_os = "windows"))]
+fn avdmanager_bin() -> &'static str { "avdmanager" }
+
+#[cfg(target_os = "windows")]
+fn sdkmanager_bin() -> &'static str { "sdkmanager.bat" }
+#[cfg(not(target_os = "windows"))]
+fn sdkmanager_bin() -> &'static str { "sdkmanager" }
+
 pub fn detect_sdk() -> Option<PathBuf> {
     for var in &["ANDROID_HOME", "ANDROID_SDK_ROOT"] {
         if let Ok(path) = std::env::var(var) {
             let p = PathBuf::from(path);
-            if p.join("platform-tools/adb").exists() {
+            if p.join("platform-tools").join(adb_bin()).exists() {
                 return Some(p);
             }
         }
@@ -28,7 +50,7 @@ pub fn detect_sdk() -> Option<PathBuf> {
         #[cfg(target_os = "windows")] home.join("AppData/Local/Android/Sdk"),
     ];
     for path in &candidates {
-        if path.join("platform-tools/adb").exists() {
+        if path.join("platform-tools").join(adb_bin()).exists() {
             return Some(path.clone());
         }
     }
@@ -36,24 +58,23 @@ pub fn detect_sdk() -> Option<PathBuf> {
 }
 
 pub fn get_avdmanager_path(sdk: &PathBuf) -> PathBuf {
-    // Try new cmdline-tools first, then old tools/bin
-    let new_path = sdk.join("cmdline-tools/latest/bin/avdmanager");
+    let new_path = sdk.join("cmdline-tools/latest/bin").join(avdmanager_bin());
     if new_path.exists() { return new_path; }
-    sdk.join("tools/bin/avdmanager")
+    sdk.join("tools/bin").join(avdmanager_bin())
 }
 
 pub fn get_emulator_path(sdk: &PathBuf) -> PathBuf {
-    sdk.join("emulator/emulator")
+    sdk.join("emulator").join(emulator_bin())
 }
 
 pub fn get_adb_path(sdk: &PathBuf) -> PathBuf {
-    sdk.join("platform-tools/adb")
+    sdk.join("platform-tools").join(adb_bin())
 }
 
 pub fn get_sdkmanager_path(sdk: &PathBuf) -> PathBuf {
-    let new_path = sdk.join("cmdline-tools/latest/bin/sdkmanager");
+    let new_path = sdk.join("cmdline-tools/latest/bin").join(sdkmanager_bin());
     if new_path.exists() { return new_path; }
-    sdk.join("tools/bin/sdkmanager")
+    sdk.join("tools/bin").join(sdkmanager_bin())
 }
 
 /// Returns error if cmdline-tools are not installed
