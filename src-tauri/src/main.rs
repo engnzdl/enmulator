@@ -54,12 +54,12 @@ fn list_available_images_cmd(config: tauri::State<Config>) -> Result<Vec<SystemI
 }
 
 #[tauri::command]
-fn install_system_image_cmd(config: tauri::State<Config>, package: String) -> Result<(), String> {
+fn install_system_image_cmd(app: tauri::AppHandle, config: tauri::State<Config>, package: String) -> Result<(), String> {
     let sdk_path = PathBuf::from(
         config.sdk_path.as_ref().ok_or("SDK not configured")?
     );
     sdk::check_sdk_tools(&sdk_path)?;
-    sdk::install_system_image(&sdk_path, &package)
+    sdk::install_system_image(&app, &sdk_path, &package)
 }
 
 // ── Device CRUD ──
