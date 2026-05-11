@@ -17,9 +17,12 @@ interface Props {
   onDelete: (id: string) => void;
   onClone: (id: string) => void;
   onDropApk?: (id: string, apkPath: string) => void;
+  selectMode?: boolean;
+  selected?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
 }
 
-export default function DeviceCard({ device, onStart, onStop, onDelete, onClone, onDropApk }: Props) {
+export default function DeviceCard({ device, onStart, onStop, onDelete, onClone, onDropApk, selectMode, selected, onSelect }: Props) {
   const isRunning = device.status === 'running';
   const [dragOver, setDragOver] = useState(false);
 
@@ -65,6 +68,8 @@ export default function DeviceCard({ device, onStart, onStop, onDelete, onClone,
     'device-card',
     isRunning ? 'status-running' : 'status-stopped',
     dragOver ? 'drag-over' : '',
+    selectMode ? 'select-mode' : '',
+    selected ? 'device-card-selected' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -75,6 +80,15 @@ export default function DeviceCard({ device, onStart, onStop, onDelete, onClone,
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
+      {selectMode && (
+        <input
+          type="checkbox"
+          className="device-checkbox"
+          checked={selected || false}
+          onChange={(e) => onSelect?.(device.id, e.target.checked)}
+          onClick={(e) => e.stopPropagation()}
+        />
+      )}
       <div className="device-info">
         <div className="device-name">
           <span className="status-dot" />
