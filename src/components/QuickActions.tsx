@@ -12,7 +12,6 @@ type ActionState = 'idle' | 'loading' | 'done';
 
 export default function QuickActions({ device_id, onOpenFiles, rootEnabled, onRootToggle }: Props) {
   const [states, setStates] = useState<Record<string, ActionState>>({});
-  const [recording, setRecording] = useState(false);
   const [gpsOpen, setGpsOpen] = useState(false);
   const [gpsLat, setGpsLat] = useState('41.0082');
   const [gpsLon, setGpsLon] = useState('28.9784');
@@ -29,23 +28,6 @@ export default function QuickActions({ device_id, onOpenFiles, rootEnabled, onRo
       mark(key, 'done');
     } catch (e) {
       console.error(`${cmd} failed:`, e);
-      mark(key, 'idle');
-    }
-  };
-
-  const handleRecord = async () => {
-    const key = 'record';
-    mark(key, 'loading');
-    try {
-      if (recording) {
-        await invoke('stop_screen_record', { id: device_id });
-      } else {
-        await invoke('start_screen_record', { id: device_id });
-      }
-      setRecording(!recording);
-      mark(key, 'done');
-    } catch (e) {
-      console.error('record toggle failed:', e);
       mark(key, 'idle');
     }
   };
@@ -73,27 +55,11 @@ export default function QuickActions({ device_id, onOpenFiles, rootEnabled, onRo
     <div>
       <div className="quick-actions">
         <button
-          className={`qa-btn${recording ? ' recording' : ''}${states['record'] === 'loading' ? ' loading' : ''}${states['record'] === 'done' ? ' done' : ''}`}
-          onClick={handleRecord}
-          title={recording ? 'Stop Recording' : 'Start Recording'}
-        >
-          <span className="qa-btn-icon">{recording ? '⏹' : '⏺'}</span> {recording ? 'Stop' : 'Record'}
-        </button>
-
-        <button
           className={stateClass('gps')}
           onClick={() => setGpsOpen(true)}
           title="Set GPS Location"
         >
           <span className="qa-btn-icon">📍</span> GPS
-        </button>
-
-        <button
-          className={stateClass('clipboard')}
-          onClick={() => act('clipboard', 'clipboard_sync', { direction: 'get' })}
-          title="Get Clipboard"
-        >
-          <span className="qa-btn-icon">📋</span> Clip
         </button>
 
         <button className="qa-btn" onClick={onOpenFiles} title="File Explorer">
