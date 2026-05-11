@@ -53,3 +53,63 @@ pub fn pull(sdk_path: &PathBuf, serial: &str, remote: &str, local: &str) -> Resu
         Err(String::from_utf8_lossy(&output.stderr).to_string())
     }
 }
+
+// ── Snapshots ──
+
+pub fn save_snapshot(sdk_path: &PathBuf, serial: &str, name: &str) -> Result<(), String> {
+    let adb = sdk::get_adb_path(sdk_path);
+    let output = Command::new(&adb)
+        .args(["-s", serial, "emu", "avd", "snapshot", "save", name])
+        .output()
+        .map_err(|e| format!("ADB error: {}", e))?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).to_string())
+    }
+}
+
+pub fn load_snapshot(sdk_path: &PathBuf, serial: &str, name: &str) -> Result<(), String> {
+    let adb = sdk::get_adb_path(sdk_path);
+    let output = Command::new(&adb)
+        .args(["-s", serial, "emu", "avd", "snapshot", "load", name])
+        .output()
+        .map_err(|e| format!("ADB error: {}", e))?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).to_string())
+    }
+}
+
+pub fn list_snapshots(sdk_path: &PathBuf, serial: &str) -> Result<Vec<String>, String> {
+    let adb = sdk::get_adb_path(sdk_path);
+    let output = Command::new(&adb)
+        .args(["-s", serial, "emu", "avd", "snapshot", "list"])
+        .output()
+        .map_err(|e| format!("ADB error: {}", e))?;
+    if output.status.success() {
+        let raw = String::from_utf8_lossy(&output.stdout).to_string();
+        let snapshots: Vec<String> = raw
+            .lines()
+            .map(|l| l.trim().to_string())
+            .filter(|l| !l.is_empty())
+            .collect();
+        Ok(snapshots)
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).to_string())
+    }
+}
+
+pub fn delete_snapshot(sdk_path: &PathBuf, serial: &str, name: &str) -> Result<(), String> {
+    let adb = sdk::get_adb_path(sdk_path);
+    let output = Command::new(&adb)
+        .args(["-s", serial, "emu", "avd", "snapshot", "delete", name])
+        .output()
+        .map_err(|e| format!("ADB error: {}", e))?;
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).to_string())
+    }
+}

@@ -366,6 +366,67 @@ fn push_file(config: tauri::State<Config>, store: tauri::State<Arc<DeviceStore>>
     adb_bridge::push(&sdk_path, &serial, &local_path, &remote_path)
 }
 
+// ── Snapshot management ──
+#[tauri::command]
+fn save_snapshot_cmd(
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+    name: String,
+) -> Result<(), String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    if dev.status != "running" {
+        return Err("Device must be running to save snapshots".into());
+    }
+    let serial = format!("emulator-{}", dev.port);
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    adb_bridge::save_snapshot(&sdk_path, &serial, &name)
+}
+
+#[tauri::command]
+fn load_snapshot_cmd(
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+    name: String,
+) -> Result<(), String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    if dev.status != "running" {
+        return Err("Device must be running to load snapshots".into());
+    }
+    let serial = format!("emulator-{}", dev.port);
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    adb_bridge::load_snapshot(&sdk_path, &serial, &name)
+}
+
+#[tauri::command]
+fn list_snapshots_cmd(
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+) -> Result<Vec<String>, String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    let serial = format!("emulator-{}", dev.port);
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    adb_bridge::list_snapshots(&sdk_path, &serial)
+}
+
+#[tauri::command]
+fn delete_snapshot_cmd(
+    config: tauri::State<Config>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+    name: String,
+) -> Result<(), String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    if dev.status != "running" {
+        return Err("Device must be running to delete snapshots".into());
+    }
+    let serial = format!("emulator-{}", dev.port);
+    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    adb_bridge::delete_snapshot(&sdk_path, &serial, &name)
+}
+
 // ── Config ──
 #[tauri::command]
 fn get_config(config: tauri::State<Config>) -> Config {
@@ -431,6 +492,10 @@ fn main() {
             list_files,
             pull_file,
             push_file,
+            save_snapshot_cmd,
+            load_snapshot_cmd,
+            list_snapshots_cmd,
+            delete_snapshot_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running enmulator");

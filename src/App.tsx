@@ -4,11 +4,13 @@ import DeviceCard, { Device } from './components/DeviceCard';
 import CreateWizard from './components/CreateWizard';
 import QuickActions from './components/QuickActions';
 import FileExplorer from './components/FileExplorer';
+import SnapshotPanel from './components/SnapshotPanel';
 
 export default function App() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [fileExplorerDeviceId, setFileExplorerDeviceId] = useState<string | null>(null);
+  const [snapshotDeviceId, setSnapshotDeviceId] = useState<string | null>(null);
 
   const loadDevices = useCallback(async () => {
     try {
@@ -94,6 +96,7 @@ export default function App() {
               key={d.id}
               device_id={d.id}
               onOpenFiles={() => setFileExplorerDeviceId(d.id)}
+              onOpenSnapshots={() => setSnapshotDeviceId(d.id)}
             />
           ))}
         </footer>
@@ -109,6 +112,13 @@ export default function App() {
         <FileExplorer
           device_id={fileExplorerDeviceId}
           onClose={() => setFileExplorerDeviceId(null)}
+        />
+      )}
+
+      {snapshotDeviceId && (
+        <SnapshotPanel
+          device_id={snapshotDeviceId}
+          onClose={() => setSnapshotDeviceId(null)}
         />
       )}
     </div>
