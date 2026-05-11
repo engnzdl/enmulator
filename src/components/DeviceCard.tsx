@@ -19,10 +19,24 @@ interface Props {
   onDropApk?: (id: string, apkPath: string) => void;
   selectMode?: boolean;
   selected?: boolean;
+  isActive?: boolean;
   onSelect?: (id: string, selected: boolean) => void;
+  onClick?: () => void;
 }
 
-export default function DeviceCard({ device, onStart, onStop, onDelete, onClone, onDropApk, selectMode, selected, onSelect }: Props) {
+export default function DeviceCard({
+  device,
+  onStart,
+  onStop,
+  onDelete,
+  onClone,
+  onDropApk,
+  selectMode,
+  selected,
+  isActive,
+  onSelect,
+  onClick,
+}: Props) {
   const isRunning = device.status === 'running';
   const [dragOver, setDragOver] = useState(false);
 
@@ -45,7 +59,6 @@ export default function DeviceCard({ device, onStart, onStop, onDelete, onClone,
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only set false if we're leaving the card itself, not a child
     if ((e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) return;
     setDragOver(false);
   };
@@ -58,7 +71,6 @@ export default function DeviceCard({ device, onStart, onStop, onDelete, onClone,
     const files = e.dataTransfer.files;
     if (files.length > 0 && onDropApk) {
       const file = files[0];
-      // Tauri webview adds a `path` property to File objects
       const apkPath = (file as any).path || file.name;
       onDropApk(device.id, apkPath);
     }
@@ -70,6 +82,7 @@ export default function DeviceCard({ device, onStart, onStop, onDelete, onClone,
     dragOver ? 'drag-over' : '',
     selectMode ? 'select-mode' : '',
     selected ? 'device-card-selected' : '',
+    isActive && !selectMode && !selected ? 'device-card-selected' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -79,6 +92,7 @@ export default function DeviceCard({ device, onStart, onStop, onDelete, onClone,
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onClick={onClick}
     >
       {selectMode && (
         <input
@@ -89,25 +103,57 @@ export default function DeviceCard({ device, onStart, onStop, onDelete, onClone,
           onClick={(e) => e.stopPropagation()}
         />
       )}
+
+      {/* Device Icon */}
+      <div className="device-icon">
+        📱
+      </div>
+
+      {/* Device Info */}
       <div className="device-info">
         <div className="device-name">
           <span className="status-dot" />
           {device.display_name}
         </div>
         <div className="device-meta">
-          {device.profile || 'custom'} · API {device.api_level} · Port {device.port || '-'}
-          {device.root_enabled && ' · rooted'}
+          {device.profile || 'custom'} · API {device.api_level}
+          {dragOver && <span className="drop-hint"> — Drop APK to install</span>}
         </div>
-        {dragOver && <div className="drop-hint">Drop APK to install</div>}
       </div>
+
+      {/* Mini action buttons (visible on hover) */}
       <div className="device-actions">
         {isRunning ? (
-          <button onClick={() => onStop(device.id)}>⏹ Stop</button>
+          <button
+            className="device-action-btn stop-btn"
+            onClick={(e) => { e.stopPropagation(); onStop(device.id); }}
+            title="Stop"
+          >
+            ⏹
+          </button>
         ) : (
-          <button onClick={() => onStart(device.id)}>▶ Start</button>
+          <button
+            className="device-action-btn start-btn"
+            onClick={(e) => { e.stopPropagation(); onStart(device.id); }}
+            title="Start"
+          >
+            ▶
+          </button>
         )}
-        <button onClick={() => onClone(device.id)}>⧉ Clone</button>
-        <button className="btn-danger" onClick={() => onDelete(device.id)}>🗑 Delete</button>
+        <button
+          className="device-action-btn"
+          onClick={(e) => { e.stopPropagation(); onClone(device.id); }}
+          title="Clone"
+        >
+          ⧉
+        </button>
+        <button
+          className="device-action-btn delete-btn"
+          onClick={(e) => { e.stopPropagation(); onDelete(device.id); }}
+          title="Delete"
+        >
+          🗑
+        </button>
       </div>
     </div>
   );

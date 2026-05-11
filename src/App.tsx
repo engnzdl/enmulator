@@ -13,6 +13,7 @@ interface BatchResult {
 
 export default function App() {
   const [devices, setDevices] = useState<Device[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [fileExplorerDeviceId, setFileExplorerDeviceId] = useState<string | null>(null);
   const [snapshotDeviceId, setSnapshotDeviceId] = useState<string | null>(null);
@@ -30,6 +31,22 @@ export default function App() {
 
   useEffect(() => { loadDevices(); }, [loadDevices]);
 
+  // Auto-select first device if nothing selected and devices exist
+  useEffect(() => {
+    if (devices.length > 0 && !selectedDeviceId) {
+      // Check if current selection still exists
+      const exists = devices.find(d => d.id === selectedDeviceId);
+      if (!exists) {
+        setSelectedDeviceId(devices[0].id);
+      }
+    }
+    if (devices.length === 0) {
+      setSelectedDeviceId(null);
+    }
+  }, [devices, selectedDeviceId]);
+
+  const selectedDevice = devices.find(d => d.id === selectedDeviceId) ?? null;
+
   const handleStart = async (id: string) => {
     await invoke('start_device', { id, headless: false });
     await loadDevices();
@@ -42,6 +59,7 @@ export default function App() {
 
   const handleDelete = async (id: string) => {
     await invoke('delete_device', { id });
+    if (selectedDeviceId === id) setSelectedDeviceId(null);
     await loadDevices();
   };
 
@@ -108,7 +126,6 @@ export default function App() {
   };
 
   const batchInstallApk = async () => {
-    // Use Tauri dialog to pick an APK file
     try {
       const { open } = await import('@tauri-apps/plugin-dialog');
       const path = await open({
@@ -134,20 +151,24 @@ export default function App() {
 
   return (
     <div className="app">
-      <header>
-        <h1>Enmulator</h1>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      {/* ── Glass Header ── */}
+      <header className="app-header">
+        <div className="app-header-brand">
+          <div className="app-header-logo">E</div>
+          <h1>Enmulator</h1>
+        </div>
+        <div className="app-header-actions">
           <button
-            className={selectMode ? 'btn-primary' : ''}
+            className={selectMode ? 'btn-primary' : 'btn-ghost'}
             onClick={toggleSelectMode}
           >
-            {selectMode ? '✕ Cancel' : '☐ Select'}
+            {selectMode ? 'Cancel' : 'Select'}
           </button>
           <button className="btn-primary" onClick={() => setWizardOpen(true)}>
             + New Device
           </button>
           <button
-            className="btn-primary"
+            className="btn-ghost"
             onClick={async () => {
               try {
                 const msg = await invoke<string>('download_rootavd');
@@ -158,57 +179,127 @@ export default function App() {
             }}
             title="Clone/update rootAVD from GitLab"
           >
-            ⬇ rootAVD
+            rootAVD
           </button>
         </div>
       </header>
 
-      <main>
-        {selectedList.length > 0 && (
-          <div className="batch-toolbar">
-            <span className="batch-count">{selectedList.length} selected</span>
-            <button className="btn-batch" onClick={() => batch('batch_start')}>▶ Start All</button>
-            <button className="btn-batch" onClick={() => batch('batch_stop')}>⏹ Stop All</button>
-            <button className="btn-batch" onClick={batchInstallApk}>📦 Install APK on All</button>
-            <button className="btn-batch btn-batch-danger" onClick={() => batch('batch_delete')}>🗑 Delete All</button>
+      {/* ── Content: Sidebar + Panel ── */}
+      <div className="app-content">
+        {/* ── Left Sidebar ── */}
+        <aside className="app-sidebar">
+          <div className="sidebar-header">
+            <h2>Devices</h2>
+            <span className="sidebar-count">{devices.length}</span>
           </div>
-        )}
-        {devices.length === 0 ? (
-          <p className="empty-state">No devices yet. Click "+ New Device" to create one.</p>
-        ) : (
-          devices.map((d) => (
-            <DeviceCard
-              key={d.id}
-              device={d}
-              onStart={handleStart}
-              onStop={handleStop}
-              onDelete={handleDelete}
-              onClone={handleClone}
-              onDropApk={handleDropApk}
-              selectMode={selectMode}
-              selected={selectedIds.has(d.id)}
-              onSelect={toggleSelect}
-            />
-          ))
-        )}
-      </main>
 
-      {devices.length > 0 && (
-        <footer className="toolbar">
-          <h2 className="toolbar-title">Quick Actions</h2>
-          {devices.map((d) => (
-            <QuickActions
-              key={d.id}
-              device_id={d.id}
-              onOpenFiles={() => setFileExplorerDeviceId(d.id)}
-              onOpenSnapshots={() => setSnapshotDeviceId(d.id)}
-              rootEnabled={d.root_enabled}
-              onRootToggle={() => handleRootToggle(d.id)}
-            />
-          ))}
-        </footer>
-      )}
+          <div className="sidebar-device-list">
+            {devices.length === 0 ? (
+              <div className="sidebar-empty">
+                <div className="sidebar-empty-icon">📱</div>
+                <p>No devices yet.<br />Click "+ New Device" to create one.</p>
+              </div>
+            ) : (
+              devices.map((d) => (
+                <DeviceCard
+                  key={d.id}
+                  device={d}
+                  onStart={handleStart}
+                  onStop={handleStop}
+                  onDelete={handleDelete}
+                  onClone={handleClone}
+                  onDropApk={handleDropApk}
+                  selectMode={selectMode}
+                  selected={selectedIds.has(d.id)}
+                  isActive={d.id === selectedDeviceId}
+                  onSelect={toggleSelect}
+                  onClick={() => { if (!selectMode) setSelectedDeviceId(d.id); }}
+                />
+              ))
+            )}
+          </div>
 
+          {/* Batch toolbar */}
+          {selectedList.length > 0 && (
+            <div className="sidebar-batch-toolbar">
+              <span className="batch-count-badge">{selectedList.length} selected</span>
+              <button className="btn-batch" onClick={() => batch('batch_start')}>Start</button>
+              <button className="btn-batch" onClick={() => batch('batch_stop')}>Stop</button>
+              <button className="btn-batch" onClick={batchInstallApk}>Install APK</button>
+              <button className="btn-batch btn-batch-danger" onClick={() => batch('batch_delete')}>Delete</button>
+            </div>
+          )}
+        </aside>
+
+        {/* ── Right Panel ── */}
+        <main className="app-panel">
+          {!selectedDevice ? (
+            <div className="panel-empty animate-in">
+              <div className="panel-empty-icon">📱</div>
+              <h3>Select a device</h3>
+              <p>Choose a device from the sidebar to view details, manage snapshots, browse files, and control the emulator.</p>
+            </div>
+          ) : (
+            <div className="panel-device animate-in" key={selectedDevice.id}>
+              {/* Device Hero */}
+              <div className="panel-device-hero">
+                <div className="panel-device-icon">📱</div>
+                <div className="panel-device-info">
+                  <div className="panel-device-name">
+                    {selectedDevice.display_name}
+                    <span className={`status-badge ${selectedDevice.status === 'running' ? 'running' : 'stopped'}`}>
+                      <span className="status-badge-dot" />
+                      {selectedDevice.status}
+                    </span>
+                  </div>
+                  <div className="panel-device-meta">
+                    <span>📋 {selectedDevice.profile || 'custom'}</span>
+                    <span>🔧 API {selectedDevice.api_level}</span>
+                    <span>🔌 Port {selectedDevice.port || '-'}</span>
+                    {selectedDevice.root_enabled && <span>🔓 rooted</span>}
+                  </div>
+                </div>
+                <div className="panel-device-actions">
+                  {selectedDevice.status === 'running' ? (
+                    <button className="btn-secondary" onClick={() => handleStop(selectedDevice.id)}>Stop</button>
+                  ) : (
+                    <button className="btn-primary" onClick={() => handleStart(selectedDevice.id)}>Start</button>
+                  )}
+                  <button className="btn-secondary" onClick={() => handleClone(selectedDevice.id)}>Clone</button>
+                  <button className="btn-danger" onClick={() => handleDelete(selectedDevice.id)}>Delete</button>
+                </div>
+              </div>
+
+              {/* Quick Actions Section */}
+              <div className="panel-section">
+                <div className="panel-section-title">Quick Actions</div>
+                <QuickActions
+                  device_id={selectedDevice.id}
+                  onOpenFiles={() => setFileExplorerDeviceId(selectedDevice.id)}
+                  onOpenSnapshots={() => setSnapshotDeviceId(selectedDevice.id)}
+                  rootEnabled={selectedDevice.root_enabled}
+                  onRootToggle={() => handleRootToggle(selectedDevice.id)}
+                />
+              </div>
+
+              {/* Tools Section */}
+              <div className="panel-section">
+                <div className="panel-section-title">Tools</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button className="btn-icon" onClick={() => setFileExplorerDeviceId(selectedDevice.id)}>
+                    📁 File Explorer
+                  </button>
+                  <button className="btn-icon" onClick={() => setSnapshotDeviceId(selectedDevice.id)}>
+                    📸 Snapshots
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* ── Modals ── */}
       <CreateWizard
         isOpen={wizardOpen}
         onClose={() => setWizardOpen(false)}

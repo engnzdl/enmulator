@@ -11,12 +11,6 @@ interface Props {
 
 type ActionState = 'idle' | 'loading' | 'done';
 
-interface ProxyConfig {
-  host: string;
-  port: number;
-  enabled: boolean;
-}
-
 export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, rootEnabled, onRootToggle }: Props) {
   const [states, setStates] = useState<Record<string, ActionState>>({});
   const [recording, setRecording] = useState(false);
@@ -83,92 +77,89 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
   };
 
   return (
-    <div className="quick-actions">
-      <button
-        className={stateClass('shell')}
-        onClick={() => act('shell', 'adb_shell', { cmd: 'id' })}
-        title="ADB Shell (id)"
-      >
-        🔧 Shell
-      </button>
-      <button
-        className={stateClass('profile')}
-        onClick={() => act('profile', 'apply_profile', { profile_name: 'pixel_5' })}
-        title="Apply Profile"
-      >
-        📱 Profile
-      </button>
-      <button
-        className={`qa-btn${recording ? ' recording' : ''}${states['record'] === 'loading' ? ' loading' : ''}${states['record'] === 'done' ? ' done' : ''}`}
-        onClick={handleRecord}
-        title={recording ? 'Stop Recording' : 'Start Recording'}
-      >
-        {recording ? '⏹ Stop' : '⏺ Record'}
-      </button>
-      <button
-        className={stateClass('gps')}
-        onClick={() => act('gps', 'gps_set', { lat: 37.7749, lon: -122.4194 })}
-        title="Set GPS (San Francisco)"
-      >
-        📍 GPS
-      </button>
-      <button
-        className={stateClass('log')}
-        onClick={() => act('log', 'logcat_start')}
-        title="Start Logcat"
-      >
-        📋 Log
-      </button>
-      <button
-        className={stateClass('clipboard')}
-        onClick={() => act('clipboard', 'clipboard_sync', { direction: 'get' })}
-        title="Get Clipboard"
-      >
-        📋 Clip
-      </button>
+    <div>
+      <div className="quick-actions">
+        <button
+          className={stateClass('shell')}
+          onClick={() => act('shell', 'adb_shell', { cmd: 'id' })}
+          title="ADB Shell (id)"
+        >
+          <span className="qa-btn-icon">🔧</span> Shell
+        </button>
+        <button
+          className={stateClass('profile')}
+          onClick={() => act('profile', 'apply_profile', { profile_name: 'pixel_5' })}
+          title="Apply Profile"
+        >
+          <span className="qa-btn-icon">📱</span> Profile
+        </button>
+        <button
+          className={`qa-btn${recording ? ' recording' : ''}${states['record'] === 'loading' ? ' loading' : ''}${states['record'] === 'done' ? ' done' : ''}`}
+          onClick={handleRecord}
+          title={recording ? 'Stop Recording' : 'Start Recording'}
+        >
+          <span className="qa-btn-icon">{recording ? '⏹' : '⏺'}</span> {recording ? 'Stop' : 'Record'}
+        </button>
+        <button
+          className={stateClass('gps')}
+          onClick={() => act('gps', 'gps_set', { lat: 37.7749, lon: -122.4194 })}
+          title="Set GPS (San Francisco)"
+        >
+          <span className="qa-btn-icon">📍</span> GPS
+        </button>
+        <button
+          className={stateClass('log')}
+          onClick={() => act('log', 'logcat_start')}
+          title="Start Logcat"
+        >
+          <span className="qa-btn-icon">📋</span> Log
+        </button>
+        <button
+          className={stateClass('clipboard')}
+          onClick={() => act('clipboard', 'clipboard_sync', { direction: 'get' })}
+          title="Get Clipboard"
+        >
+          <span className="qa-btn-icon">📋</span> Clip
+        </button>
 
-      {onOpenFiles && (
         <button
           className="qa-btn"
           onClick={onOpenFiles}
           title="File Explorer"
         >
-          📁 Files
+          <span className="qa-btn-icon">📁</span> Files
         </button>
-      )}
 
-      {onOpenSnapshots && (
         <button
           className="qa-btn"
           onClick={onOpenSnapshots}
           title="Snapshots"
         >
-          📸 Snapshots
+          <span className="qa-btn-icon">📸</span> Snapshots
         </button>
-      )}
 
-      {onRootToggle !== undefined && (
-        <button
-          className={`qa-btn${rootEnabled ? ' recording' : ''}${states['root'] === 'loading' ? ' loading' : ''}${states['root'] === 'done' ? ' done' : ''}`}
-          onClick={() => {
-            mark('root', 'loading');
-            onRootToggle();
-            setTimeout(() => mark('root', 'done'), 2000);
-          }}
-          title={rootEnabled ? 'Unroot device' : 'Root device (via rootAVD)'}
-        >
-          {rootEnabled ? '🔓 Unroot' : '🔒 Root'}
-        </button>
-      )}
+        {onRootToggle !== undefined && (
+          <button
+            className={`qa-btn${rootEnabled ? ' recording' : ''}${states['root'] === 'loading' ? ' loading' : ''}${states['root'] === 'done' ? ' done' : ''}`}
+            onClick={() => {
+              mark('root', 'loading');
+              onRootToggle();
+              setTimeout(() => mark('root', 'done'), 2000);
+            }}
+            title={rootEnabled ? 'Unroot device' : 'Root device (via rootAVD)'}
+          >
+            <span className="qa-btn-icon">{rootEnabled ? '🔓' : '🔒'}</span> {rootEnabled ? 'Unroot' : 'Root'}
+          </button>
+        )}
+      </div>
 
       {/* Proxy inline inputs + toggle */}
-      <div className="proxy-controls" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <div className="proxy-controls">
         <input
           type="text"
           value={proxyHost}
           onChange={(e) => setProxyHost(e.target.value)}
           placeholder="host"
-          style={{ width: 90, fontSize: 11, padding: '2px 4px' }}
           disabled={proxyEnabled}
         />
         <span>:</span>
@@ -177,14 +168,13 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
           value={proxyPort}
           onChange={(e) => setProxyPort(e.target.value)}
           placeholder="port"
-          style={{ width: 55, fontSize: 11, padding: '2px 4px' }}
           disabled={proxyEnabled}
         />
         <button
           className={stateClass('proxy')}
           onClick={handleProxyToggle}
           title={proxyEnabled ? 'Disable Proxy' : 'Enable Proxy'}
-          style={{ fontSize: 11, padding: '2px 6px' }}
+          style={{ fontSize: 11, padding: '3px 8px' }}
         >
           {proxyEnabled ? 'Disable' : 'Enable'}
         </button>
