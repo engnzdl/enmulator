@@ -59,12 +59,17 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
       <div className="quick-actions">
         <button
           className={stateClass('shell')}
-          onClick={() => {
+          onClick={async () => {
             console.log('Shell clicked, invoking adb_shell...');
             mark('shell', 'loading');
-            invoke('adb_shell', { id: device_id, cmd: 'echo "Root: $(id -u)"' })
-              .then(() => mark('shell', 'done'))
-              .catch(() => mark('shell', 'idle'));
+            try {
+              const r = await invoke('adb_shell', { id: device_id, cmd: 'id' });
+              console.log('adb_shell result:', r);
+              mark('shell', 'done');
+            } catch(e: any) {
+              console.error('adb_shell error:', e?.message ?? e, e);
+              mark('shell', 'idle');
+            }
           }}
           title="ADB Shell test"
         >
