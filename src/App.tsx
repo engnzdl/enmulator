@@ -282,7 +282,6 @@ export default function App() {
                 <QuickActions
                   device_id={selectedDevice.id}
                   onOpenFiles={() => setFileExplorerDeviceId(selectedDevice.id)}
-                  onOpenSnapshots={() => setSnapshotDeviceId(selectedDevice.id)}
                   rootEnabled={selectedDevice.root_enabled}
                   onRootToggle={() => handleRootToggle(selectedDevice.id)}
                 />

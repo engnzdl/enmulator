@@ -4,7 +4,6 @@ import { invoke } from '@tauri-apps/api/core';
 interface Props {
   device_id: string;
   onOpenFiles?: () => void;
-  onOpenSnapshots?: () => void;
   rootEnabled?: boolean;
   onRootToggle?: () => void;
 }
