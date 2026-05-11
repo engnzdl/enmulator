@@ -352,9 +352,6 @@ body {
 .device-meta {
   font-size: 0.72rem;
   color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ── Status Indicators ── */

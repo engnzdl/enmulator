@@ -183,20 +183,6 @@ export default function App() {
           <button className="btn-primary" onClick={() => setWizardOpen(true)}>
             + New Device
           </button>
-          <button
-            className="btn-ghost"
-            onClick={async () => {
-              try {
-                const msg = await invoke<string>('download_rootavd');
-                console.log(msg);
-              } catch (e) {
-                console.error('download_rootavd failed:', e);
-              }
-            }}
-            title="Clone/update rootAVD from GitLab"
-          >
-            rootAVD
-          </button>
         </div>
       </header>
 
