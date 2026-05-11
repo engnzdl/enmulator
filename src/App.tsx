@@ -5,8 +5,6 @@ import CreateWizard from './components/CreateWizard';
 import QuickActions from './components/QuickActions';
 import ProxyCard from './components/ProxyCard';
 import FileExplorer from './components/FileExplorer';
-import SnapshotPanel from './components/SnapshotPanel';
-
 interface BatchResult {
   success: string[];
   failed: { id: string; error: string }[];
@@ -17,7 +15,6 @@ export default function App() {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [fileExplorerDeviceId, setFileExplorerDeviceId] = useState<string | null>(null);
-  const [snapshotDeviceId, setSnapshotDeviceId] = useState<string | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -318,12 +315,6 @@ export default function App() {
         />
       )}
 
-      {snapshotDeviceId && (
-        <SnapshotPanel
-          device_id={snapshotDeviceId}
-          onClose={() => setSnapshotDeviceId(null)}
-        />
-      )}
     </div>
   );
 }

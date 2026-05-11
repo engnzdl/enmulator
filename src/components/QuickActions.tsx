@@ -101,10 +101,6 @@ export default function QuickActions({ device_id, onOpenFiles, onOpenSnapshots, 
           <span className="qa-btn-icon">📁</span> Files
         </button>
 
-        <button className="qa-btn" onClick={onOpenSnapshots} title="Snapshots">
-          <span className="qa-btn-icon">📸</span> Snapshots
-        </button>
-
         {onRootToggle !== undefined && (
           <button
             className={`qa-btn${rootEnabled ? ' recording' : ''}${states['root'] === 'loading' ? ' loading' : ''}${states['root'] === 'done' ? ' done' : ''}`}
