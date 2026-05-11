@@ -41,6 +41,16 @@ pub fn save_profile(profiles_dir: &PathBuf, profile: &FingerprintProfile) {
     fs::write(path, content).ok();
 }
 
+pub fn delete_profile(profiles_dir: &PathBuf, name: &str) -> Result<(), String> {
+    let filename = format!("{}.json", name.to_lowercase().replace(' ', "_"));
+    let path = profiles_dir.join(filename);
+    if path.exists() {
+        fs::remove_file(&path).map_err(|e| format!("Failed to delete profile: {}", e))
+    } else {
+        Err(format!("Profile '{}' not found", name))
+    }
+}
+
 pub fn apply_to_device(
     sdk_path: &PathBuf,
     serial: &str,

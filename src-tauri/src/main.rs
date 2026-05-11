@@ -77,13 +77,14 @@ fn create_device(
     api_level: u8,
     abi: String,
     tag: String,
+    fingerprint_profile: Option<String>,
 ) -> Result<Device, String> {
     let sdk_path = PathBuf::from(
         config.sdk_path.as_ref().ok_or("SDK not configured")?
     );
     sdk::check_sdk_tools(&sdk_path)?;
     let dev = avd_manager::create_avd(
-        &sdk_path, &name, &name, api_level, &abi, &tag, &profile, &store.devices_dir,
+        &sdk_path, &name, &name, api_level, &abi, &tag, &profile, fingerprint_profile, &store.devices_dir,
     )?;
     store.insert(dev.clone());
     Ok(dev)
@@ -130,6 +131,7 @@ fn clone_device(
         display_name: target_name,
         avd_name: format!("enmulator_{}", target_id),
         profile: source.profile.clone(),
+        fingerprint_profile: source.fingerprint_profile.clone(),
         api_level: source.api_level,
         status: "stopped".to_string(),
         port: 0,
@@ -230,6 +232,17 @@ fn enable_proxy(
 #[tauri::command]
 fn list_profiles() -> Vec<FingerprintProfile> {
     fingerprint::list_profiles(&PathBuf::from("profiles"))
+}
+
+#[tauri::command]
+fn create_profile(profile: FingerprintProfile) -> Result<FingerprintProfile, String> {
+    fingerprint::save_profile(&PathBuf::from("profiles"), &profile);
+    Ok(profile)
+}
+
+#[tauri::command]
+fn delete_profile(name: String) -> Result<(), String> {
+    fingerprint::delete_profile(&PathBuf::from("profiles"), &name)
 }
 
 #[tauri::command]
@@ -662,6 +675,8 @@ fn main() {
             set_device_proxy,
             enable_proxy,
             list_profiles,
+            create_profile,
+            delete_profile,
             apply_profile,
             start_screen_record,
             stop_screen_record,
