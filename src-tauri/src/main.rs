@@ -10,7 +10,6 @@ mod fingerprint;
 mod extras;
 mod api_server;
 mod set_proxy;
-mod rootavd;
 
 use config::Config;
 use device::{Device, DeviceStore};
@@ -579,13 +578,7 @@ async fn batch_delete(
     Ok(result)
 }
 
-// ── rootAVD ──
-
-#[tauri::command]
-fn download_rootavd() -> Result<String, String> {
-    let repo_dir = PathBuf::from("rootAVD");
-    rootavd::clone_or_update(&repo_dir)
-}
+// ── Root ──
 
 #[tauri::command]
 fn toggle_root(
@@ -594,22 +587,34 @@ fn toggle_root(
     id: String,
 ) -> Result<String, String> {
     let dev = store.get(&id).ok_or("Device not found")?;
-    if dev.status == "running" {
-        return Err("Stop the device before toggling root".into());
+    if dev.status != "running" {
+        return Err("Device must be running to toggle root".into());
     }
     let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
-    let repo_dir = PathBuf::from("rootAVD");
-
+    let serial = format!("emulator-{}", dev.port);
+    
     if dev.root_enabled {
-        // Unroot: restore backup
-        let msg = rootavd::unroot(&sdk_path, dev.api_level)?;
+        let adb = sdk::get_adb_path(&sdk_path);
+        let _ = std::process::Command::new(&adb)
+            .args(["-s", &serial, "unroot"])
+            .output();
         store.set_root(&id, false);
-        Ok(msg)
+        Ok("Root disabled".to_string())
     } else {
-        // Root: patch ramdisk
-        let msg = rootavd::toggle_root(&sdk_path, dev.api_level, &repo_dir)?;
-        store.set_root(&id, true);
-        Ok(msg)
+        let adb = sdk::get_adb_path(&sdk_path);
+        let output = std::process::Command::new(&adb)
+            .args(["-s", &serial, "root"])
+            .output()
+            .map_err(|e| format!("ADB error: {}", e))?;
+        
+        let out = String::from_utf8_lossy(&output.stdout);
+        if out.contains("already running as root") || output.status.success() {
+            store.set_root(&id, true);
+            Ok("Root enabled".to_string())
+        } else {
+            let err = String::from_utf8_lossy(&output.stderr);
+            Err(format!("adb root failed: {}. Use a Google APIs system image.", err))
+        }
     }
 }
 
@@ -709,7 +714,6 @@ fn main() {
             load_snapshot_cmd,
             list_snapshots_cmd,
             delete_snapshot_cmd,
-            download_rootavd,
             toggle_root,
         ])
         .run(tauri::generate_context!())
