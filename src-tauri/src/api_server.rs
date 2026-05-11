@@ -239,7 +239,7 @@ async fn adb_shell(
 
 // GET /api/profiles
 async fn list_profiles() -> HttpResponse {
-    let profiles = fingerprint::list_profiles(&PathBuf::from("profiles"));
+    let profiles = fingerprint::list_profiles(&PathBuf::from("../profiles"));
     ok_json(profiles)
 }
 

@@ -85,7 +85,7 @@ fn create_device(
 
     // Look up fingerprint profile for resolution/DPI
     let (res_w, res_h, dpi) = if let Some(ref fp_name) = fingerprint_profile {
-        let profiles = fingerprint::list_profiles(&PathBuf::from("profiles"));
+        let profiles = fingerprint::list_profiles(&PathBuf::from("../profiles"));
         profiles
             .iter()
             .find(|p| p.name == *fp_name)
@@ -245,18 +245,18 @@ fn enable_proxy(
 // ── Profiles ──
 #[tauri::command]
 fn list_profiles() -> Vec<FingerprintProfile> {
-    fingerprint::list_profiles(&PathBuf::from("profiles"))
+    fingerprint::list_profiles(&PathBuf::from("../profiles"))
 }
 
 #[tauri::command]
 fn create_profile(profile: FingerprintProfile) -> Result<FingerprintProfile, String> {
-    fingerprint::save_profile(&PathBuf::from("profiles"), &profile);
+    fingerprint::save_profile(&PathBuf::from("../profiles"), &profile);
     Ok(profile)
 }
 
 #[tauri::command]
 fn delete_profile(name: String) -> Result<(), String> {
-    fingerprint::delete_profile(&PathBuf::from("profiles"), &name)
+    fingerprint::delete_profile(&PathBuf::from("../profiles"), &name)
 }
 
 #[tauri::command]
@@ -270,7 +270,7 @@ fn apply_profile(
     if dev.status != "running" {
         return Err("Device must be running to apply profile".into());
     }
-    let profiles = fingerprint::list_profiles(&PathBuf::from("profiles"));
+    let profiles = fingerprint::list_profiles(&PathBuf::from("../profiles"));
     let profile = profiles.into_iter().find(|p| p.name == profile_name).ok_or("Profile not found")?;
     let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
     let serial = format!("emulator-{}", dev.port);
