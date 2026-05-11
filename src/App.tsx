@@ -5,6 +5,7 @@ import CreateWizard from './components/CreateWizard';
 import QuickActions from './components/QuickActions';
 import ProxyCard from './components/ProxyCard';
 import FileExplorer from './components/FileExplorer';
+import SettingsPanel from './components/SettingsPanel';
 interface BatchResult {
   success: string[];
   failed: { id: string; error: string }[];
@@ -17,6 +18,7 @@ export default function App() {
   const [fileExplorerDeviceId, setFileExplorerDeviceId] = useState<string | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const loadDevices = useCallback(async () => {
     try {
@@ -174,6 +176,9 @@ export default function App() {
           <h1>Enmulator</h1>
         </div>
         <div className="app-header-actions">
+          <button className="btn-icon" onClick={() => setSettingsOpen(true)} title="Settings">
+            ⚙
+          </button>
           <button
             className={selectMode ? 'btn-primary' : 'btn-ghost'}
             onClick={toggleSelectMode}
@@ -312,6 +317,10 @@ export default function App() {
           device_id={fileExplorerDeviceId}
           onClose={() => setFileExplorerDeviceId(null)}
         />
+      )}
+
+      {settingsOpen && (
+        <SettingsPanel onClose={() => setSettingsOpen(false)} />
       )}
 
     </div>

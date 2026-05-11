@@ -7,6 +7,11 @@ pub struct Config {
     pub sdk_path: Option<String>,
     pub devices_dir: String,
     pub api_server_port: u16,
+    pub default_headless: bool,
+    pub auto_start_api: bool,
+    pub default_api_level: u8,
+    pub default_abi: String,
+    pub default_tag: String,
 }
 
 impl Default for Config {
@@ -15,6 +20,11 @@ impl Default for Config {
             sdk_path: None,
             devices_dir: "devices".to_string(),
             api_server_port: 8080,
+            default_headless: false,
+            auto_start_api: false,
+            default_api_level: 34,
+            default_abi: "x86_64".to_string(),
+            default_tag: "google_apis".to_string(),
         }
     }
 }
