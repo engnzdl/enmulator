@@ -156,27 +156,19 @@ pub fn list_available_images(sdk_path: &PathBuf) -> Result<Vec<SystemImage>, Str
 pub fn install_system_image(app: &tauri::AppHandle, sdk_path: &PathBuf, package: &str) -> Result<(), String> {
     let sdkmanager = get_sdkmanager_path(sdk_path);
     
-    // First accept all licenses
-    let _ = Command::new(&sdkmanager)
-        .args(["--licenses"])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
-        .and_then(|mut child| {
-            use std::io::Write;
-            if let Some(stdin) = child.stdin.as_mut() {
-                let _ = writeln!(stdin, "y\ny\ny\ny\ny\ny\ny\ny\ny\ny");
-            }
-            child.wait()
-        });
-    
     let mut child = Command::new(&sdkmanager)
         .args(["--install", package])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
+        .stdin(Stdio::piped())
         .spawn()
         .map_err(|e| format!("sdkmanager install spawn error: {}", e))?;
+
+    // Auto-accept license prompts by writing 'y' to stdin
+    if let Some(mut stdin) = child.stdin.take() {
+        use std::io::Write;
+        let _ = stdin.write_all(b"y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n");
+    }
 
     let stdout = child.stdout.take().ok_or("Failed to capture sdkmanager stdout")?;
     let stderr = child.stderr.take().ok_or("Failed to capture sdkmanager stderr")?;
