@@ -34,7 +34,10 @@ pub fn detect_sdk() -> Option<PathBuf> {
 }
 
 pub fn get_avdmanager_path(sdk: &PathBuf) -> PathBuf {
-    sdk.join("cmdline-tools/latest/bin/avdmanager")
+    // Try new cmdline-tools first, then old tools/bin
+    let new_path = sdk.join("cmdline-tools/latest/bin/avdmanager");
+    if new_path.exists() { return new_path; }
+    sdk.join("tools/bin/avdmanager")
 }
 
 pub fn get_emulator_path(sdk: &PathBuf) -> PathBuf {
@@ -46,7 +49,27 @@ pub fn get_adb_path(sdk: &PathBuf) -> PathBuf {
 }
 
 pub fn get_sdkmanager_path(sdk: &PathBuf) -> PathBuf {
-    sdk.join("cmdline-tools/latest/bin/sdkmanager")
+    let new_path = sdk.join("cmdline-tools/latest/bin/sdkmanager");
+    if new_path.exists() { return new_path; }
+    sdk.join("tools/bin/sdkmanager")
+}
+
+/// Returns error if cmdline-tools are not installed
+pub fn check_sdk_tools(sdk: &PathBuf) -> Result<(), String> {
+    let sm = get_sdkmanager_path(sdk);
+    let avd = get_avdmanager_path(sdk);
+    if !sm.exists() || !avd.exists() {
+        return Err(format!(
+            "Android SDK Command-line Tools not found.\n\n\
+            Install them via Android Studio:\n\
+            SDK Manager → SDK Tools → \"Android SDK Command-line Tools\"\n\n\
+            Or download from:\n\
+            https://developer.android.com/studio#command-line-tools-only\n\n\
+            Expected at: {}/cmdline-tools/latest/bin/",
+            sdk.to_string_lossy()
+        ));
+    }
+    Ok(())
 }
 
 pub fn get_ramdisk_path(sdk: &PathBuf, api_level: u8, tag: &str, abi: &str) -> PathBuf {
