@@ -443,13 +443,36 @@ Devices and profiles are stored in the same location hierarchy.
 
 ##  Building
 
-```bash
-# Production build (platform-specific binary)
-npm run tauri build
+### Prerequisites
 
-# Output (macOS example):
-# src-tauri/target/release/bundle/dmg/Enmulator_*.dmg
+1. Generate app icons and place them in `src-tauri/icons/`:
+   - `icon.icns` (macOS, 1024x1024)
+   - `icon.ico` (Windows, 256x256)
+   - `32x32.png`, `128x128.png`, `128x128@2x.png` (Linux + generic)
+
+   You can generate these from any 1024x1024 PNG using:
+   ```bash
+   # macOS: use iconutil or online converter
+   # Linux: sudo apt install icnsutils
+   png2icns src-tauri/icons/icon.icns icon-1024.png
+   ```
+
+2. Enable bundling in `src-tauri/tauri.conf.json`:
+   ```json
+   "bundle": { "active": true }
+   ```
+
+### Production Build
+
+```bash
+npm run tauri build
 ```
+
+| Platform | Output |
+|---|---|
+| **macOS** | `src-tauri/target/release/bundle/dmg/Enmulator_*.dmg` |
+| **Windows** | `src-tauri/target/release/bundle/msi/Enmulator_*.msi` |
+| **Linux** | `src-tauri/target/release/bundle/deb/enmulator_*.deb` + `.AppImage` |
 
 The binary is ~15 MB (plus Android SDK tools at runtime).
 
