@@ -20,6 +20,15 @@
   <a href="https://github.com/engnzdl/enmulator/releases/download/v0.1.0/Enmulator_0.1.0_amd64.deb"><img src="https://img.shields.io/badge/download-Linux%20.deb-FCC624?style=for-the-badge&logo=linux" alt="Linux deb"></a>
 </p>
 
+<p align="center">
+  <img src="screenshots/1-main.png" alt="Main Window" width="45%">
+  <img src="screenshots/2-create-device-step-1.png" alt="Create Device" width="45%">
+</p>
+<p align="center">
+  <img src="screenshots/3-create-device-step-2.png" alt="System Image" width="45%">
+  <img src="screenshots/4-settings.png" alt="Settings" width="45%">
+</p>
+
 <p align="center">Create, manage, and customize Android Virtual Devices with a premium desktop UI.<br>Built with Tauri 2 + React + Rust. CleanMyMac-inspired dark theme.</p>
 
 ---
