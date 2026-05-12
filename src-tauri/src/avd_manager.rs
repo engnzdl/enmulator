@@ -2,7 +2,6 @@ use crate::sdk;
 use crate::device::Device;
 use std::fs;
 use std::path::PathBuf;
-use std::process::Command;
 
 /// Hardcoded fallback device IDs to try when creating an AVD.
 /// We override resolution/DPI via config.ini afterward, so any modern device works.
@@ -45,13 +44,17 @@ pub fn create_avd(
 
     let device_def = pick_device_id(sdk_path);
 
-    let output = Command::new(&avdmanager)
+    let avd_path_str = avd_path.to_str()
+        .ok_or("AVD path contains invalid UTF-8")?
+        .to_string();
+
+    let output = sdk::sdk_command(&avdmanager)
         .args([
             "create", "avd", "--force",
             "--name", &avd_name,
             "--package", &package,
             "--device", &device_def,
-            "--path", avd_path.to_str().unwrap_or("/tmp"),
+            "--path", &avd_path_str,
         ])
         .output()
         .map_err(|e| format!("avdmanager error: {}", e))?;
@@ -116,7 +119,9 @@ fn override_config_ini(avd_path: &PathBuf, width: u16, height: u16, dpi: u16) ->
         new_lines.push(format!("hw.lcd.density={}", dpi));
     }
 
-    fs::write(&config_path, new_lines.join("\n"))
+    // Use platform-native line endings so the emulator doesn't get confused
+    let eol = if cfg!(target_os = "windows") { "\r\n" } else { "\n" };
+    fs::write(&config_path, new_lines.join(eol))
         .map_err(|e| format!("Failed to write config.ini: {}", e))?;
 
     Ok(())
@@ -124,7 +129,7 @@ fn override_config_ini(avd_path: &PathBuf, width: u16, height: u16, dpi: u16) ->
 
 pub fn list_device_definitions(sdk_path: &PathBuf) -> Result<Vec<String>, String> {
     let avdmanager = sdk::get_avdmanager_path(sdk_path);
-    let output = Command::new(&avdmanager)
+    let output = sdk::sdk_command(&avdmanager)
         .args(["list", "device", "-c"])
         .output()
         .map_err(|e| format!("avdmanager error: {}", e))?;
