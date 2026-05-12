@@ -2,7 +2,7 @@
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=for-the-badge" alt="Platform">
   <img src="https://img.shields.io/badge/built%20with-Tauri%202-ffc131?style=for-the-badge&logo=tauri" alt="Tauri">
   <img src="https://img.shields.io/badge/rust-1.75%2B-orange?style=for-the-badge&logo=rust" alt="Rust">
-  <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="License">
+  <img src="https://img.shields.io/badge/license-GPLv3-blue?style=for-the-badge" alt="License">
 </p>
 
 <p align="center">
@@ -29,7 +29,7 @@ Managing Android emulators via command line is tedious. Android Studio is heavy 
 |---|---|---|---|---|---|
 | **Platform** | macOS, Windows, Linux | macOS, Windows, Linux | Windows, macOS | Windows | **macOS, Windows, Linux** |
 | **Size** | ~2 GB (IDE) | ~400 MB | ~500 MB | ~300 MB | **~15 MB binary** |
-| **Price** | Free | **$479/yr** (Pro) | Free (ads) | Free (ads) | **Free · MIT** |
+| **Price** | Free | **$479/yr** (Pro) | Free (ads) | Free (ads) | **Free · GPLv3** |
 | **Open Source** |  |  |  |  | ** ** |
 | **Focus** | Development | QA / CI | Gaming | Gaming | **Dev + Testing** |
 | **Fingerprint Profiles** |  |  (manual) |  |  | **30 built-in, 10 brands** |
@@ -301,7 +301,11 @@ Please ensure TypeScript (`npx tsc --noEmit`) and Rust (`cargo build`) both pass
 
 ##  License
 
-MIT © [engnzdl](https://github.com/engnzdl)
+GNU General Public License v3.0
+
+© 2025 [engnzdl](https://github.com/engnzdl)
+
+This project is free software — you can use, modify, and distribute it under the terms of the GPL v3. Any derivative work must also be open-sourced under the same license (copyleft).
 
 ---
 
