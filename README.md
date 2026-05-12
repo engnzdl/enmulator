@@ -29,7 +29,7 @@
   <img src="screenshots/4-settings.png" alt="Settings" width="45%">
 </p>
 
-<p align="center">Create, manage, and customize Android Virtual Devices with a premium desktop UI.<br>Built with Tauri 2 + React + Rust. CleanMyMac-inspired dark theme.</p>
+<p align="center">Create, manage, and customize Android Virtual Devices with a premium desktop UI.<br>Built with Tauri 2 + React + Rust.</p>
 
 ---
 
@@ -56,7 +56,7 @@ Managing Android emulators via command line is tedious. Android Studio is heavy 
 | **GPS Simulation** |  (extended controls) |  (widget) |  (basic) |  (basic) | **coordinate popup** |
 | **Root Access** | `adb root` | `adb root` | built-in | built-in | **toggle (Google APIs)** |
 | **Headless Mode** | `-no-window` |  (cloud) |  |  | **flag + auto-identity** |
-| **Dark UI** |  (IDE theme) |  |  |  | **CleanMyMac-inspired** |
+| **Dark UI** |  (IDE theme) |  |  |  | **premium dark theme** |
 
 ##  Features
 
@@ -370,7 +370,7 @@ All errors return `4xx` with a consistent JSON body:
 | **Frontend** | React 18 + TypeScript + Vite |
 | **Backend** | Rust — 13 modules, ~25 Tauri commands |
 | **REST API** | Actix-web 4 |
-| **Styling** | CSS custom properties, CleanMyMac-inspired dark theme |
+| **Styling** | CSS custom properties, premium dark theme |
 | **Android** | SDK command-line tools (avdmanager, sdkmanager, adb, emulator) |
 
 ### Rust Modules

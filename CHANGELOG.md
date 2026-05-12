@@ -23,7 +23,7 @@ All notable changes to Enmulator.
 - Platform-native SDK binary paths (`.exe`/`.bat` on Windows)
 - Platform config/data directories (`~/Library/Application Support`, `~/.config`, `%APPDATA%`)
 - Auto-generated random device names
-- CleanMyMac-inspired premium dark UI
+- Premium dark UI
 - Cross-platform path handling (no shell assumptions, no hardcoded `/tmp`)
 - GPLv3 license
 
