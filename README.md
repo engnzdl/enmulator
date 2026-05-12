@@ -95,16 +95,249 @@ Configurable via ⚙ gear icon:
 - Advanced: devices directory, API server port
 
 ### Headless REST API
-Full Actix-web REST server for automation:
-- `GET /api/devices` — list all devices
-- `POST /api/devices` — create device
-- `POST /api/devices/{id}/start` — start emulator
-- `POST /api/devices/{id}/stop` — stop emulator
-- `DELETE /api/devices/{id}` — delete device
-- `POST /api/devices/{id}/clone` — clone device
-- `POST /api/devices/{id}/shell` — run ADB shell command
-- `GET /api/profiles` — list fingerprint profiles
-- `GET /api/devices/{id}/logcat` — SSE logcat stream
+
+Built-in Actix-web server on configurable port (default: 8080). All responses are JSON.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/devices` | List all devices |
+| `POST` | `/api/devices` | Create a new device |
+| `POST` | `/api/devices/{id}/start` | Start a device (headless) |
+| `POST` | `/api/devices/{id}/stop` | Stop a device |
+| `DELETE` | `/api/devices/{id}` | Delete a device |
+| `POST` | `/api/devices/{id}/clone` | Clone a device |
+| `POST` | `/api/devices/{id}/adb` | Run ADB shell command |
+| `GET` | `/api/devices/{id}/logcat` | SSE logcat stream |
+| `GET` | `/api/profiles` | List fingerprint profiles |
+
+#### `GET /api/devices`
+
+Returns all devices with their current state.
+
+```bash
+curl http://localhost:8080/api/devices
+```
+
+<details>
+<summary>Response</summary>
+
+```json
+[
+  {
+    "id": "ultra_emu",
+    "display_name": "Ultra_Emu",
+    "avd_name": "enmulator_ultra_emu",
+    "profile": "pixel_6_pro",
+    "fingerprint_profile": "Samsung S25 Ultra",
+    "api_level": 34,
+    "status": "running",
+    "port": 5554,
+    "root_enabled": true,
+    "adb_enabled": true,
+    "created_at": "2026-05-12T01:00:00+00:00"
+  }
+]
+```
+
+</details>
+
+#### `POST /api/devices`
+
+Create a new AVD.
+
+```bash
+curl -X POST http://localhost:8080/api/devices \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test Device","api_level":34,"abi":"x86_64","tag":"google_apis"}'
+```
+
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `name` | string | yes | — | Display name (used as ID, lowercased) |
+| `api_level` | int | yes | — | Android API level (34 = Android 14) |
+| `abi` | string | no | `x86_64` | CPU architecture |
+| `tag` | string | no | `google_apis` | System image variant |
+
+<details>
+<summary>Response → <code>201</code></summary>
+
+```json
+{
+  "id": "test_device",
+  "display_name": "Test Device",
+  "avd_name": "enmulator_test_device",
+  "profile": "pixel_6_pro",
+  "fingerprint_profile": null,
+  "api_level": 34,
+  "status": "stopped",
+  "port": 0,
+  "root_enabled": false,
+  "adb_enabled": true,
+  "created_at": "2026-05-12T02:00:00+00:00"
+}
+```
+
+</details>
+
+#### `POST /api/devices/{id}/start`
+
+Start a device in headless mode. Response includes the assigned port.
+
+```bash
+curl -X POST http://localhost:8080/api/devices/ultra_emu/start
+```
+
+<details>
+<summary>Response → <code>200</code></summary>
+
+```json
+{ "port": 5554 }
+```
+
+</details>
+
+#### `POST /api/devices/{id}/stop`
+
+Stop a running device.
+
+```bash
+curl -X POST http://localhost:8080/api/devices/ultra_emu/stop
+```
+
+<details>
+<summary>Response → <code>200</code></summary>
+
+```json
+{ "status": "stopped" }
+```
+
+</details>
+
+#### `DELETE /api/devices/{id}`
+
+Permanently delete a device and its AVD data.
+
+```bash
+curl -X DELETE http://localhost:8080/api/devices/ultra_emu
+```
+
+<details>
+<summary>Response → <code>200</code></summary>
+
+```json
+{ "deleted": "ultra_emu" }
+```
+
+</details>
+
+#### `POST /api/devices/{id}/clone`
+
+Clone an existing device (AVD data copied, snapshots excluded).
+
+```bash
+curl -X POST http://localhost:8080/api/devices/ultra_emu/clone \
+  -H "Content-Type: application/json" \
+  -d '{"target_name":"Ultra Emu Clone"}'
+```
+
+<details>
+<summary>Response → <code>200</code></summary>
+
+```json
+{
+  "id": "ultra_emu_clone",
+  "display_name": "Ultra Emu Clone",
+  "avd_name": "enmulator_ultra_emu_clone",
+  "status": "stopped",
+  "port": 0,
+  ...
+}
+```
+
+</details>
+
+#### `POST /api/devices/{id}/adb`
+
+Execute an arbitrary ADB shell command on a running device.
+
+```bash
+curl -X POST http://localhost:8080/api/devices/ultra_emu/adb \
+  -H "Content-Type: application/json" \
+  -d '{"cmd":"getprop ro.build.version.sdk"}'
+```
+
+<details>
+<summary>Response → <code>200</code></summary>
+
+```json
+{ "output": "34\n" }
+```
+
+</details>
+
+#### `GET /api/devices/{id}/logcat`
+
+Server-Sent Events (SSE) stream of real-time logcat output.
+
+```bash
+curl -N http://localhost:8080/api/devices/ultra_emu/logcat
+```
+
+<details>
+<summary>Response → <code>200 text/event-stream</code></summary>
+
+```
+data: 05-12 02:00:01.234  1234  1234 I ActivityManager: Start proc ...
+data: 05-12 02:00:01.456  1234  1235 D SurfaceFlinger: ...
+data: 05-12 02:00:01.678  1234  1236 W PackageManager: ...
+```
+
+Streams indefinitely until client disconnects.
+
+</details>
+
+#### `GET /api/profiles`
+
+List all available fingerprint profiles.
+
+```bash
+curl http://localhost:8080/api/profiles
+```
+
+<details>
+<summary>Response (<abbreviated>)</summary>
+
+```json
+[
+  {
+    "name": "Samsung S25 Ultra",
+    "brand": "samsung",
+    "model": "SM-S938B",
+    "device": "b5q",
+    "fingerprint": "samsung/b5qxxx/b5q:15/...",
+    "dpi": 500,
+    "resolution_w": 1440,
+    "resolution_h": 3120,
+    "imei": "351371505786517",
+    "imei2": "351371505786525",
+    "phone_number": "+905723649220",
+    "sim_operator": "28602",
+    "sim_operator_name": "Vodafone TR",
+    "sim_country": "tr",
+    "sim_serial": "8905641752952096082"
+  }
+]
+```
+
+</details>
+
+#### Error Format
+
+All errors return `4xx` with a consistent JSON body:
+
+```json
+{ "success": false, "error": "Device not found" }
+```
 
 ### Architecture
 - **No Android Studio required** — only Android SDK command-line tools
