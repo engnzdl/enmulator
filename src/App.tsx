@@ -172,7 +172,7 @@ export default function App() {
       {/* ── Glass Header ── */}
       <header className="app-header">
         <div className="app-header-brand">
-          <div className="app-header-logo">E</div>
+          <img src="/icon-32.png" alt="Enmulator" className="app-header-logo" />
           <h1>Enmulator</h1>
         </div>
         <div className="app-header-actions">
