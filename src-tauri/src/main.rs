@@ -11,6 +11,7 @@ mod extras;
 mod api_server;
 mod set_proxy;
 mod bypass;
+mod paths;
 
 use config::Config;
 use device::{Device, DeviceStore};
@@ -85,7 +86,7 @@ fn create_device(
 
     // Look up fingerprint profile for resolution/DPI
     let (res_w, res_h, dpi) = if let Some(ref fp_name) = fingerprint_profile {
-        let profiles = fingerprint::list_profiles(&PathBuf::from("../profiles"));
+        let profiles = fingerprint::list_profiles(&paths::profiles_dir());
         profiles
             .iter()
             .find(|p| p.name == *fp_name)
@@ -170,7 +171,7 @@ fn start_device(
     let dev = store.get(&id).ok_or("Device not found")?;
 
     let profile = dev.fingerprint_profile.as_ref().and_then(|name| {
-        fingerprint::list_profiles(&PathBuf::from("../profiles"))
+        fingerprint::list_profiles(&paths::profiles_dir())
             .into_iter()
             .find(|p| &p.name == name)
     });
@@ -286,18 +287,18 @@ fn enable_proxy(
 // ── Profiles ──
 #[tauri::command]
 fn list_profiles() -> Vec<FingerprintProfile> {
-    fingerprint::list_profiles(&PathBuf::from("../profiles"))
+    fingerprint::list_profiles(&paths::profiles_dir())
 }
 
 #[tauri::command]
 fn create_profile(profile: FingerprintProfile) -> Result<FingerprintProfile, String> {
-    fingerprint::save_profile(&PathBuf::from("../profiles"), &profile);
+    fingerprint::save_profile(&paths::profiles_dir(), &profile);
     Ok(profile)
 }
 
 #[tauri::command]
 fn delete_profile(name: String) -> Result<(), String> {
-    fingerprint::delete_profile(&PathBuf::from("../profiles"), &name)
+    fingerprint::delete_profile(&paths::profiles_dir(), &name)
 }
 
 #[tauri::command]
@@ -311,7 +312,7 @@ fn apply_profile(
     if dev.status != "running" {
         return Err("Device must be running to apply profile".into());
     }
-    let profiles = fingerprint::list_profiles(&PathBuf::from("../profiles"));
+    let profiles = fingerprint::list_profiles(&paths::profiles_dir());
     let profile = profiles.into_iter().find(|p| p.name == profile_name).ok_or("Profile not found")?;
     let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
     let serial = format!("emulator-{}", dev.port);
@@ -856,7 +857,10 @@ fn install_cert(
 }
 
 fn main() {
-    let config_path = PathBuf::from("config.json");
+    // Copy default profiles on first run
+    paths::ensure_default_profiles();
+
+    let config_path = paths::config_file();
     let mut cfg = config::load(&config_path);
 
     // Auto-detect SDK on first run if not already configured
@@ -867,7 +871,12 @@ fn main() {
         }
     }
 
-    let devices_dir = PathBuf::from(&cfg.devices_dir);
+    // Use the configured devices_dir, or fall back to platform data dir
+    let devices_dir = if cfg.devices_dir != Config::default().devices_dir {
+        PathBuf::from(&cfg.devices_dir)
+    } else {
+        paths::devices_dir()
+    };
 
     let store = Arc::new(DeviceStore::new(devices_dir));
     let existing = store.list();
