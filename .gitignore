@@ -4,5 +4,25 @@ dist/
 devices/
 config.json
 docs/
+
+# Logs
 *.log
+
+# OS files
 .DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Build artifacts
+*.dmg
+*.msi
+*.AppImage
+*.deb
+*.rpm
