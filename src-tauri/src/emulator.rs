@@ -46,10 +46,12 @@ impl EmulatorStore {
         cmd.arg("-no-snapshot-save");
         cmd.arg("-no-snapshot-load");
 
-        // -prop flags don't work for Android system properties on QEMU.
-        // Identity (IMEI, operator, etc.) is applied AFTER boot via apply_to_device
-        // which uses adb root + setprop for mutable properties.
-        // ro.product.* properties are immutable (from system image) regardless.
+        // Enable KVM hardware acceleration on Linux
+        #[cfg(target_os = "linux")]
+        if std::path::Path::new("/dev/kvm").exists() {
+            cmd.arg("-accel").arg("on");
+        }
+
         let _ = profile;
 
         let child = cmd.spawn().map_err(|e| format!("Failed to start: {}", e))?;

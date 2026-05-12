@@ -29,6 +29,24 @@ fn avdmanager_bin() -> &'static str { "avdmanager.bat" }
 #[cfg(not(target_os = "windows"))]
 fn avdmanager_bin() -> &'static str { "avdmanager" }
 
+/// Wraps SDK tool invocations correctly per platform.
+/// On Windows, .bat files need `cmd /c` prefix when paths may contain spaces.
+#[cfg(target_os = "windows")]
+pub fn sdk_command(path: &PathBuf) -> Command {
+    if path.to_string_lossy().ends_with(".bat") {
+        let mut c = Command::new("cmd");
+        c.arg("/c").arg(path);
+        c
+    } else {
+        Command::new(path)
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn sdk_command(path: &PathBuf) -> Command {
+    Command::new(path)
+}
+
 #[cfg(target_os = "windows")]
 fn sdkmanager_bin() -> &'static str { "sdkmanager.bat" }
 #[cfg(not(target_os = "windows"))]
@@ -107,7 +125,7 @@ pub fn get_ramdisk_path(sdk: &PathBuf, api_level: u8, tag: &str, abi: &str) -> P
 /// Returns Vec<SystemImage> with api_level, abi, tag, and description.
 pub fn list_available_images(sdk_path: &PathBuf) -> Result<Vec<SystemImage>, String> {
     let sdkmanager = get_sdkmanager_path(sdk_path);
-    let output = Command::new(&sdkmanager)
+    let output = sdk_command(&sdkmanager)
         .args(["--list"])
         .output()
         .map_err(|e| format!("sdkmanager error: {}", e))?;
@@ -176,8 +194,8 @@ pub fn list_available_images(sdk_path: &PathBuf) -> Result<Vec<SystemImage>, Str
 /// Streams stdout lines in real-time via Tauri `download-progress` events.
 pub fn install_system_image(app: &tauri::AppHandle, sdk_path: &PathBuf, package: &str) -> Result<(), String> {
     let sdkmanager = get_sdkmanager_path(sdk_path);
-    
-    let mut child = Command::new(&sdkmanager)
+
+    let mut child = sdk_command(&sdkmanager)
         .args(["--install", package])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
