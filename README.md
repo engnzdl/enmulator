@@ -13,6 +13,13 @@
 <h1 align="center">Enmulator</h1>
 <p align="center"><strong>Cross-Platform Android Emulator Manager</strong></p>
 
+<p align="center">
+  <a href="https://github.com/engnzdl/enmulator/releases/download/v0.1.0/Enmulator_0.1.0_aarch64.dmg"><img src="https://img.shields.io/badge/download-macOS%20.dmg-000?style=for-the-badge&logo=apple" alt="macOS"></a>
+  <a href="https://github.com/engnzdl/enmulator/releases/download/v0.1.0/Enmulator_0.1.0_x64_en-US.msi"><img src="https://img.shields.io/badge/download-Windows%20.msi-0078D6?style=for-the-badge&logo=windows" alt="Windows"></a>
+  <a href="https://github.com/engnzdl/enmulator/releases/download/v0.1.0/Enmulator_0.1.0_amd64.AppImage"><img src="https://img.shields.io/badge/download-Linux%20.AppImage-FCC624?style=for-the-badge&logo=linux" alt="Linux AppImage"></a>
+  <a href="https://github.com/engnzdl/enmulator/releases/download/v0.1.0/Enmulator_0.1.0_amd64.deb"><img src="https://img.shields.io/badge/download-Linux%20.deb-FCC624?style=for-the-badge&logo=linux" alt="Linux deb"></a>
+</p>
+
 <p align="center">Create, manage, and customize Android Virtual Devices with a premium desktop UI.<br>Built with Tauri 2 + React + Rust. CleanMyMac-inspired dark theme.</p>
 
 ---
