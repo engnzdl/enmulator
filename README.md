@@ -23,16 +23,24 @@ Managing Android emulators via command line is tedious. Android Studio is heavy 
 
 **Enmulator** gives you a native, cross-platform desktop app that wraps the Android SDK tools in a beautiful, fast interface — no Android Studio required. 30 pre-loaded device profiles across 10 brands, batch operations, per-device proxy, GPS simulation, and more.
 
-| | Android Studio AVD Manager | MuMuPlayer | **Enmulator** |
-|---|---|---|---|
-| Cross-platform |  (slow) |  Windows-only |  **macOS, Windows, Linux** |
-| Lightweight |  ~2 GB IDE |  ~600 MB |  **~15 MB binary** |
-| Open Source |  |  |  **MIT** |
-| Fingerprint Profiles |  |  |  **30 profiles, 10 brands** |
-| IMEI / SIM Spoofing |  |  |  **per-profile auto-apply** |
-| Batch Operations |  |  |  **multi-select** |
-| REST API |  |  |  **headless server** |
-| Premium UI |  |  |  **dark theme, animations** |
+### vs The Alternatives
+
+| | Android Studio AVD | Genymotion Desktop | BlueStacks | LDPlayer | **Enmulator** |
+|---|---|---|---|---|---|
+| **Platform** | macOS, Windows, Linux | macOS, Windows, Linux | Windows, macOS | Windows | **macOS, Windows, Linux** |
+| **Size** | ~2 GB (IDE) | ~400 MB | ~500 MB | ~300 MB | **~15 MB binary** |
+| **Price** | Free | **$479/yr** (Pro) | Free (ads) | Free (ads) | **Free · MIT** |
+| **Open Source** |  |  |  |  | ** ** |
+| **Focus** | Development | QA / CI | Gaming | Gaming | **Dev + Testing** |
+| **Fingerprint Profiles** |  |  (manual) |  |  | **30 built-in, 10 brands** |
+| **IMEI / SIM Spoofing** |  |  |  |  | **per-profile auto-apply** |
+| **Batch Operations** |  |  (Pro) |  (multi-instance) |  (sync) | **multi-select start/stop/clone/APK** |
+| **REST API** |  |  (Pro) |  |  | **built-in Actix-web server** |
+| **Proxy per Device** |  |  |  |  | **host/port + cert installer** |
+| **GPS Simulation** |  (extended controls) |  (widget) |  (basic) |  (basic) | **coordinate popup** |
+| **Root Access** | `adb root` | `adb root` | built-in | built-in | **toggle (Google APIs)** |
+| **Headless Mode** | `-no-window` |  (cloud) |  |  | **flag + auto-identity** |
+| **Dark UI** |  (IDE theme) |  |  |  | **CleanMyMac-inspired** |
 
 ##  Features
 
