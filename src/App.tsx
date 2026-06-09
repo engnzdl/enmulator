@@ -40,7 +40,11 @@ export default function App() {
         if (d.status === 'running') {
           try {
             const alive = await invoke<boolean>('check_device_alive', { id: d.id });
-            if (!alive) loadDevices();
+            if (!alive) {
+              // Emulator closed externally — sync store status to stopped
+              await invoke('stop_device', { id: d.id }).catch(() => {});
+              await loadDevices();
+            }
           } catch { /* ignore */ }
         }
       });
@@ -334,6 +338,7 @@ export default function App() {
                 <DeviceIdentityPanel
                   device_id={selectedDevice.id}
                   device_status={selectedDevice.status}
+                  current_profile={selectedDevice.fingerprint_profile ?? undefined}
                 />
               </div>
 
