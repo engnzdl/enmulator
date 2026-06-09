@@ -24,10 +24,6 @@ jobs:
             target: aarch64-apple-darwin
             artifact: enmulator_arm64_mac
             ext: dmg
-          - os: macos-13
-            target: x86_64-apple-darwin
-            artifact: enmulator_x64_mac
-            ext: dmg
 
     runs-on: ${{ matrix.os }}
 
