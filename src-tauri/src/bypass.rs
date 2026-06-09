@@ -26,16 +26,13 @@ pub fn bypass_detection(sdk_path: &PathBuf, serial: &str) -> Result<String, Stri
         }
     }
 
-    // Check if /system is writable (writable system mode was enabled)
+    // Check if /system is writable using test -w (more portable than touch)
     let writable = adb_bridge::shell(sdk_path, serial,
-        "touch /system/enmulator_test 2>/dev/null && echo writable || echo readonly")
-        .map(|o| o.trim().contains("writable"))
+        "test -w /system && echo 1 || echo 0")
+        .map(|o| o.trim() == "1")
         .unwrap_or(false);
 
     if writable {
-        // Clean up test file
-        let _ = adb_bridge::shell(sdk_path, serial, "rm -f /system/enmulator_test");
-
         // Patch build.prop directly — the only reliable method on google_apis images
         let patch_result = patch_build_prop(sdk_path, serial);
         match patch_result {
@@ -69,8 +66,9 @@ pub fn bypass_detection(sdk_path: &PathBuf, serial: &str) -> Result<String, Stri
 
 /// Patch /system/build.prop to hide emulator fingerprints.
 fn patch_build_prop(sdk_path: &PathBuf, serial: &str) -> Result<usize, String> {
-    // Read current build.prop
-    let content = adb_bridge::shell(sdk_path, serial, "cat /system/build.prop")?;
+    // Read current build.prop — normalize line endings (adb on Windows returns \r\n)
+    let raw = adb_bridge::shell(sdk_path, serial, "cat /system/build.prop")?;
+    let content = raw.replace("\r\n", "\n").replace("\r", "\n");
 
     let replacements: &[(&str, &str)] = &[
         ("ro.debuggable=", "ro.debuggable=0"),
@@ -99,12 +97,14 @@ fn patch_build_prop(sdk_path: &PathBuf, serial: &str) -> Result<usize, String> {
         }
     }
 
+    // Always use Unix line endings — Android build.prop must not have \r\n
     let new_content = new_lines.join("\n");
 
-    // Write via temp file to avoid shell escaping nightmares
     let adb = sdk::get_adb_path(sdk_path);
     let tmp_local = std::env::temp_dir().join("enmulator_build.prop");
-    std::fs::write(&tmp_local, &new_content).map_err(|e| e.to_string())?;
+    // Write with explicit Unix LF bytes so Windows doesn't add \r
+    let bytes: Vec<u8> = new_content.bytes().collect();
+    std::fs::write(&tmp_local, bytes).map_err(|e| e.to_string())?;
 
     // Push to /sdcard/ then copy to /system/build.prop
     std::process::Command::new(&adb)
