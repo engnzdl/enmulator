@@ -6,7 +6,14 @@ All notable changes to Enmulator.
 
 ### New Features
 
-- **Device Identity Panel** — MuMuPlayer-style Device tab in the right panel. Brand/model preset picker (from bundled profiles), auto-fill all identity fields, IMEI random generator (Luhn-valid), SIM operator/country fields, inline Apply button. Works on any running device via `adb setprop`.
+- **Device Extras** — Additional spoofing without LSPosed:
+  - **Android ID** — `settings put secure android_id` with random 16-hex generator
+  - **WiFi MAC** — `ip link set wlan0/eth0 address` with locally-administered MAC generator
+  - **Timezone** — dropdown (14 zones) → `settings put global time_zone`
+  - **Locale** — dropdown (17 locales) → `settings put system system_locales` + broadcast
+- **Install Magisk App** button — installs Magisk Manager APK from bundled Magisk.zip onto running device
+- **Bypass Detection rewrite** — patches `/system/build.prop` directly when System RW is active; shows step-by-step instructions otherwise
+- **Device Identity Panel** — MuMuPlayer-style Device tab in the right panel. Brand/model preset picker (from bundled profiles), auto-fill all identity fields, IMEI random generator (Luhn-valid), SIM operator/country fields, inline Apply button. Works on any running device via `adb setprop`. Auto-selects device's current profile on mount.
 - **Writable System toggle** — `adb root` + `adb remount` as a Quick Action button (System RO/RW). State shown in device meta bar. Runtime only — resets on reboot.
 - **Magisk Root** — one-click root via bundled rootAVD script. Patches the system image's `ramdisk.img` with Magisk. Device must be stopped. Works on any system image variant.
 - **ADB serial display** — `emulator-{port}` shown in device panel when running. Copy-paste ready for `adb -s` commands.
