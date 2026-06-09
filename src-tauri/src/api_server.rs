@@ -174,7 +174,7 @@ async fn clone_device(
         None => return not_found("Source device not found"),
     };
 
-    let target_id = target_name.to_lowercase().replace(' ', "_");
+    let target_id = crate::avd_manager::sanitize_id(&target_name);
     let src_dir = state.device_store.devices_dir.join(&source_id);
     let dst_dir = state.device_store.devices_dir.join(&target_id);
 
@@ -199,10 +199,15 @@ async fn clone_device(
         return err(&e);
     }
 
+    let new_avd_name = format!("enmulator_{}", target_id);
+    if let Err(e) = crate::avd_manager::register_avd_at_path(&new_avd_name, &dst_dir) {
+        return err(&e);
+    }
+
     let cloned = Device {
         id: target_id.clone(),
         display_name: target_name,
-        avd_name: format!("enmulator_{}", target_id),
+        avd_name: new_avd_name,
         profile: source.profile.clone(),
         fingerprint_profile: source.fingerprint_profile.clone(),
         api_level: source.api_level,
