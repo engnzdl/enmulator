@@ -27,6 +27,33 @@ interface Props {
   current_profile?: string;
 }
 
+function generateAndroidId(): string {
+  return Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+}
+
+function generateMac(): string {
+  // Locally administered, unicast MAC
+  const bytes = Array.from({ length: 6 }, (_, i) => {
+    const b = Math.floor(Math.random() * 256);
+    if (i === 0) return (b & 0xfe) | 0x02; // locally administered, unicast
+    return b;
+  });
+  return bytes.map(b => b.toString(16).padStart(2, '0')).join(':');
+}
+
+const TIMEZONES = [
+  'UTC', 'Europe/Istanbul', 'Europe/Paris', 'Europe/London', 'Europe/Berlin',
+  'America/New_York', 'America/Los_Angeles', 'America/Chicago',
+  'Asia/Dubai', 'Asia/Tokyo', 'Asia/Shanghai', 'Asia/Singapore',
+  'Australia/Sydney', 'Africa/Johannesburg',
+];
+
+const LOCALES = [
+  'en-US', 'en-GB', 'tr-TR', 'fr-FR', 'de-DE', 'es-ES',
+  'it-IT', 'pt-BR', 'ru-RU', 'ar-SA', 'zh-CN', 'zh-TW',
+  'ja-JP', 'ko-KR', 'nl-NL', 'pl-PL', 'sv-SE',
+];
+
 // Luhn algorithm — generates a valid 15-digit IMEI
 function generateIMEI(): string {
   const digits: number[] = [];
@@ -66,8 +93,16 @@ export default function DeviceIdentityPanel({ device_id, device_status, current_
   const [simCountry, setSimCountry] = useState('');
   const [simSerial, setSimSerial] = useState('');
 
+  // Device extras
+  const [androidId, setAndroidId] = useState('');
+  const [wifiMac, setWifiMac] = useState('');
+  const [timezone, setTimezone] = useState('');
+  const [locale, setLocale] = useState('');
+
   const [applyState, setApplyState] = useState<ApplyState>('idle');
   const [applyMsg, setApplyMsg] = useState('');
+  const [extrasState, setExtrasState] = useState<ApplyState>('idle');
+  const [extrasMsg, setExtrasMsg] = useState('');
 
   useEffect(() => {
     invoke<FingerprintProfile[]>('list_profiles').then(p => {
@@ -145,6 +180,39 @@ export default function DeviceIdentityPanel({ device_id, device_status, current_
       setApplyState('error');
       setApplyMsg(e?.message ?? String(e));
       setTimeout(() => setApplyState('idle'), 5000);
+    }
+  };
+
+  const handleApplyExtras = async () => {
+    if (device_status !== 'running') {
+      setExtrasMsg('Device must be running');
+      setExtrasState('error');
+      setTimeout(() => setExtrasState('idle'), 3000);
+      return;
+    }
+    if (!androidId && !wifiMac && !timezone && !locale) {
+      setExtrasMsg('Fill at least one field');
+      setExtrasState('error');
+      setTimeout(() => setExtrasState('idle'), 3000);
+      return;
+    }
+    setExtrasState('loading');
+    setExtrasMsg('');
+    try {
+      const result = await invoke<string>('set_device_extras', {
+        id: device_id,
+        androidId: androidId || null,
+        wifiMac: wifiMac || null,
+        timezone: timezone || null,
+        locale: locale || null,
+      });
+      setExtrasState('done');
+      setExtrasMsg(result);
+      setTimeout(() => setExtrasState('idle'), 4000);
+    } catch (e: any) {
+      setExtrasState('error');
+      setExtrasMsg(e?.message ?? String(e));
+      setTimeout(() => setExtrasState('idle'), 5000);
     }
   };
 
@@ -322,6 +390,87 @@ export default function DeviceIdentityPanel({ device_id, device_status, current_
           style={{ marginLeft: 'auto' }}
         >
           {applyState === 'loading' ? 'Applying...' : applyState === 'done' ? '✓ Applied' : 'Apply Identity'}
+        </button>
+      </div>
+
+      {/* ── Device Extras ── */}
+      <div className="identity-extras-divider">Device Extras</div>
+
+      <div className="identity-fields">
+        {/* Android ID */}
+        <div className="identity-field-row">
+          <label>Android ID</label>
+          <div className="identity-input-with-btn">
+            <input
+              type="text"
+              value={androidId}
+              onChange={e => setAndroidId(e.target.value)}
+              placeholder="16-char hex"
+              maxLength={16}
+              className="identity-input"
+              style={{ fontFamily: 'monospace' }}
+            />
+            <button className="identity-regen-btn" onClick={() => setAndroidId(generateAndroidId())} title="Generate random Android ID">↻</button>
+          </div>
+        </div>
+
+        {/* WiFi MAC */}
+        <div className="identity-field-row">
+          <label>WiFi MAC</label>
+          <div className="identity-input-with-btn">
+            <input
+              type="text"
+              value={wifiMac}
+              onChange={e => setWifiMac(e.target.value)}
+              placeholder="xx:xx:xx:xx:xx:xx"
+              className="identity-input"
+              style={{ fontFamily: 'monospace' }}
+            />
+            <button className="identity-regen-btn" onClick={() => setWifiMac(generateMac())} title="Generate random local MAC">↻</button>
+          </div>
+        </div>
+
+        {/* Timezone */}
+        <div className="identity-field-row">
+          <label>Timezone</label>
+          <select
+            value={timezone}
+            onChange={e => setTimezone(e.target.value)}
+            className="identity-select"
+          >
+            <option value="">— keep current —</option>
+            {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+          </select>
+        </div>
+
+        {/* Locale */}
+        <div className="identity-field-row">
+          <label>Locale</label>
+          <select
+            value={locale}
+            onChange={e => setLocale(e.target.value)}
+            className="identity-select"
+          >
+            <option value="">— keep current —</option>
+            {LOCALES.map(l => <option key={l} value={l}>{l}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="identity-actions">
+        {extrasMsg && (
+          <span className={`identity-msg ${extrasState === 'error' ? 'identity-msg-error' : 'identity-msg-ok'}`}
+            style={{ whiteSpace: 'pre-line' }}>
+            {extrasMsg}
+          </span>
+        )}
+        <button
+          className="btn-primary"
+          onClick={handleApplyExtras}
+          disabled={!isRunning || extrasState === 'loading'}
+          style={{ marginLeft: 'auto' }}
+        >
+          {extrasState === 'loading' ? 'Applying...' : extrasState === 'done' ? '✓ Applied' : 'Apply Extras'}
         </button>
       </div>
     </div>
