@@ -2055,6 +2055,18 @@ button:disabled {
 .identity-msg-ok { color: var(--success); }
 .identity-msg-error { color: var(--danger); }
 
+/* ── Identity Extras Divider ── */
+.identity-extras-divider {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  padding: 8px 0 4px;
+  border-top: var(--border-subtle);
+  margin-top: 4px;
+}
+
 /* ── ADB Connection Info ── */
 .adb-info {
   display: flex;

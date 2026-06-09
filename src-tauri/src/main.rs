@@ -726,6 +726,69 @@ async fn batch_delete(
     Ok(result)
 }
 
+// ── Device Extras: Android ID, WiFi MAC, Timezone, Locale ──
+
+#[tauri::command]
+fn set_device_extras(
+    config: tauri::State<Arc<Mutex<Config>>>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+    android_id: Option<String>,
+    wifi_mac: Option<String>,
+    timezone: Option<String>,
+    locale: Option<String>,
+) -> Result<String, String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    if dev.status != "running" {
+        return Err("Device must be running".into());
+    }
+    let sdk_path = PathBuf::from(
+        config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?
+    );
+    let serial = format!("emulator-{}", dev.port);
+    let mut applied = vec![];
+
+    if let Some(ref aid) = android_id {
+        adb_bridge::shell(&sdk_path, &serial,
+            &format!("settings put secure android_id {}", aid))?;
+        applied.push(format!("Android ID → {}", aid));
+    }
+
+    if let Some(ref mac) = wifi_mac {
+        // Try wlan0 first, fall back to eth0 (emulator uses eth0 for WiFi simulation)
+        let mac_cmd = format!(
+            "ip link set wlan0 address {mac} 2>/dev/null || ip link set eth0 address {mac}",
+            mac = mac
+        );
+        adb_bridge::shell(&sdk_path, &serial, &mac_cmd)?;
+        applied.push(format!("WiFi MAC → {}", mac));
+    }
+
+    if let Some(ref tz) = timezone {
+        adb_bridge::shell(&sdk_path, &serial,
+            &format!("settings put global time_zone '{}'", tz))?;
+        let _ = adb_bridge::setprop(&sdk_path, &serial, "persist.sys.timezone", tz);
+        applied.push(format!("Timezone → {}", tz));
+    }
+
+    if let Some(ref loc) = locale {
+        // system_locales for API 24+; system locale for older
+        let _ = adb_bridge::shell(&sdk_path, &serial,
+            &format!("settings put system system_locales '{}'", loc));
+        let _ = adb_bridge::shell(&sdk_path, &serial,
+            &format!("settings put system locale '{}'", loc));
+        // Broadcast locale change so running apps pick it up
+        let _ = adb_bridge::shell(&sdk_path, &serial,
+            "am broadcast -a android.intent.action.LOCALE_CHANGED");
+        applied.push(format!("Locale → {}", loc));
+    }
+
+    if applied.is_empty() {
+        return Err("No values provided".into());
+    }
+    Ok(applied.join("\n"))
+}
+
 // ── Root ──
 
 #[tauri::command]
@@ -1278,6 +1341,7 @@ fn main() {
             list_files,
             pull_file,
             push_file,
+            set_device_extras,
             toggle_root,
             toggle_writable_system,
             root_with_magisk,
