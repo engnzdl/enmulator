@@ -1,0 +1,3 @@
+[submodule "src-tauri/rootAVD"]
+	path = src-tauri/rootAVD
+	url = https://gitlab.com/newbit/rootAVD.git
