@@ -1,0 +1,19 @@
+{
+  "name": "SHARP AQUOS wish2",
+  "brand": "SHARP",
+  "model": "SH-53D",
+  "manufacturer": "SHARP",
+  "device": "SH-53D",
+  "fingerprint": "sharp/SH-53D/SH-53D:12/S3-KC.1-000/01.00.00:user/release-keys",
+  "dpi": 294,
+  "resolution_w": 720,
+  "resolution_h": 1520,
+  "imei": "384026930476560",
+  "imei2": "667956814987852",
+  "meid": "25732385342552",
+  "phone_number": "+905584234830",
+  "sim_operator": "26201",
+  "sim_operator_name": "Telekom DE",
+  "sim_country": "de",
+  "sim_serial": "8907046834198470092"
+}

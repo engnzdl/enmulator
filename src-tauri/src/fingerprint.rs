@@ -14,14 +14,22 @@ pub struct FingerprintProfile {
     pub dpi: u16,
     pub resolution_w: u16,
     pub resolution_h: u16,
-    // ── Identity / SIM (mutable via root + setprop) ──
+    // ── Identity / SIM — optional, default to empty string ──
+    #[serde(default)]
     pub imei: String,
+    #[serde(default)]
     pub imei2: String,
+    #[serde(default)]
     pub meid: String,
+    #[serde(default)]
     pub phone_number: String,
+    #[serde(default)]
     pub sim_operator: String,
+    #[serde(default)]
     pub sim_operator_name: String,
+    #[serde(default)]
     pub sim_country: String,
+    #[serde(default)]
     pub sim_serial: String,
 }
 

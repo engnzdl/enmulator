@@ -208,8 +208,9 @@ async fn clone_device(
         api_level: source.api_level,
         status: "stopped".to_string(),
         port: 0,
-        root_enabled: source.root_enabled,
+        root_enabled: false,
         adb_enabled: source.adb_enabled,
+        writable_system: false,
         created_at: chrono::Utc::now().to_rfc3339(),
     };
     state.device_store.insert(cloned.clone());

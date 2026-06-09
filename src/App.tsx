@@ -6,6 +6,7 @@ import QuickActions from './components/QuickActions';
 import ProxyCard from './components/ProxyCard';
 import FileExplorer from './components/FileExplorer';
 import SettingsPanel from './components/SettingsPanel';
+import DeviceIdentityPanel from './components/DeviceIdentityPanel';
 interface BatchResult {
   success: string[];
   failed: { id: string; error: string }[];
@@ -19,6 +20,7 @@ export default function App() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [globalError, setGlobalError] = useState<string | null>(null);
 
   const loadDevices = useCallback(async () => {
     try {
@@ -46,35 +48,50 @@ export default function App() {
     return () => clearInterval(interval);
   }, [devices, loadDevices]);
 
-  // Auto-select first device if nothing selected and devices exist
+  // Keep selection valid: auto-select first device when selection is empty or stale
   useEffect(() => {
-    if (devices.length > 0 && !selectedDeviceId) {
-      // Check if current selection still exists
-      const exists = devices.find(d => d.id === selectedDeviceId);
-      if (!exists) {
-        setSelectedDeviceId(devices[0].id);
-      }
-    }
     if (devices.length === 0) {
       setSelectedDeviceId(null);
+      return;
+    }
+    const exists = devices.find(d => d.id === selectedDeviceId);
+    if (!exists) {
+      setSelectedDeviceId(devices[0].id);
     }
   }, [devices, selectedDeviceId]);
 
   const selectedDevice = devices.find(d => d.id === selectedDeviceId) ?? null;
 
+  const showError = (msg: string) => {
+    setGlobalError(msg);
+    setTimeout(() => setGlobalError(null), 5000);
+  };
+
   const handleStart = async (id: string) => {
-    await invoke('start_device', { id, headless: false });
+    try {
+      await invoke('start_device', { id, headless: false });
+    } catch (e: any) {
+      showError(`Failed to start device: ${e?.message ?? String(e)}`);
+    }
     await loadDevices();
   };
 
   const handleStop = async (id: string) => {
-    await invoke('stop_device', { id });
+    try {
+      await invoke('stop_device', { id });
+    } catch (e: any) {
+      showError(`Failed to stop device: ${e?.message ?? String(e)}`);
+    }
     await loadDevices();
   };
 
   const handleDelete = async (id: string) => {
-    await invoke('delete_device', { id });
-    if (selectedDeviceId === id) setSelectedDeviceId(null);
+    try {
+      await invoke('delete_device', { id });
+      if (selectedDeviceId === id) setSelectedDeviceId(null);
+    } catch (e: any) {
+      showError(`Failed to delete device: ${e?.message ?? String(e)}`);
+    }
     await loadDevices();
   };
 
@@ -84,17 +101,25 @@ export default function App() {
     try {
       await invoke('clone_device', { sourceId: id, targetName: name });
       await loadDevices();
-    } catch (e) {
-      console.error('clone failed:', e);
+    } catch (e: any) {
+      showError(`Failed to clone device: ${e?.message ?? String(e)}`);
     }
   };
 
   const handleRootToggle = async (id: string) => {
     try {
-      const result = await invoke<string>('toggle_root', { id });
-      console.log('Root toggle:', result);
-    } catch (e) {
-      console.error('Root toggle failed:', e);
+      await invoke<string>('toggle_root', { id });
+    } catch (e: any) {
+      showError(`Root toggle failed: ${e?.message ?? String(e)}`);
+    }
+    await loadDevices();
+  };
+
+  const handleWritableToggle = async (id: string) => {
+    try {
+      await invoke<string>('toggle_writable_system', { id });
+    } catch (e: any) {
+      showError(`System disk toggle failed: ${e?.message ?? String(e)}`);
     }
     await loadDevices();
   };
@@ -191,6 +216,13 @@ export default function App() {
         </div>
       </header>
 
+      {/* ── Global Error Toast ── */}
+      {globalError && (
+        <div className="global-error-toast" onClick={() => setGlobalError(null)}>
+          ⚠ {globalError}
+        </div>
+      )}
+
       {/* ── Content: Sidebar + Panel ── */}
       <div className="app-content">
         {/* ── Left Sidebar ── */}
@@ -268,6 +300,7 @@ export default function App() {
                     })()}</span>
                     <span>🔌 Port {selectedDevice.port || '-'}</span>
                     {selectedDevice.root_enabled && <span>🔓 rooted</span>}
+                    {selectedDevice.writable_system && <span>💾 system rw</span>}
                   </div>
                 </div>
                 <div className="panel-device-actions">
@@ -286,9 +319,21 @@ export default function App() {
                 <div className="panel-section-title">Quick Actions</div>
                 <QuickActions
                   device_id={selectedDevice.id}
+                  device_port={selectedDevice.port || undefined}
                   onOpenFiles={() => setFileExplorerDeviceId(selectedDevice.id)}
                   rootEnabled={selectedDevice.root_enabled}
+                  writableSystem={selectedDevice.writable_system}
                   onRootToggle={() => handleRootToggle(selectedDevice.id)}
+                  onWritableToggle={() => handleWritableToggle(selectedDevice.id)}
+                />
+              </div>
+
+              {/* Device Identity Section */}
+              <div className="panel-section">
+                <div className="panel-section-title">Device Identity</div>
+                <DeviceIdentityPanel
+                  device_id={selectedDevice.id}
+                  device_status={selectedDevice.status}
                 />
               </div>
 

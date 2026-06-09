@@ -1,0 +1,19 @@
+{
+  "name": "OnePlus Ace 3",
+  "brand": "OnePlus",
+  "model": "PJE110",
+  "manufacturer": "OnePlus",
+  "device": "OP5B4FL1",
+  "fingerprint": "OnePlus/PJE110/OP5B4FL1:14/UKQ1.230924.001/V14.0.0.705(EX01):user/release-keys",
+  "dpi": 450,
+  "resolution_w": 1264,
+  "resolution_h": 2780,
+  "imei": "755117137315015",
+  "imei2": "596742200223318",
+  "meid": "41003731410052",
+  "phone_number": "+905032533881",
+  "sim_operator": "20810",
+  "sim_operator_name": "SFR",
+  "sim_country": "fr",
+  "sim_serial": "8903529937385563242"
+}

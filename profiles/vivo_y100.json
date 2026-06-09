@@ -1,0 +1,19 @@
+{
+  "name": "vivo Y100",
+  "brand": "vivo",
+  "model": "V2313A",
+  "manufacturer": "vivo",
+  "device": "V2313A",
+  "fingerprint": "vivo/V2313A/V2313A:13/TP1A.220624.014/compile18091201:user/release-keys",
+  "dpi": 408,
+  "resolution_w": 1080,
+  "resolution_h": 2400,
+  "imei": "943458754205052",
+  "imei2": "693048995644474",
+  "meid": "80626928285452",
+  "phone_number": "+905166767182",
+  "sim_operator": "28602",
+  "sim_operator_name": "Vodafone TR",
+  "sim_country": "tr",
+  "sim_serial": "8908013039069249394"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "OPPO Find N3",
+  "brand": "OPPO",
+  "model": "PHN110",
+  "manufacturer": "OPPO",
+  "device": "OP5945L1",
+  "fingerprint": "OPPO/PHN110/OP5945L1:13/SKQ1.221012.001/V14.0.0.1(P1):user/release-keys",
+  "dpi": 426,
+  "resolution_w": 1080,
+  "resolution_h": 2520,
+  "imei": "943863478083513",
+  "imei2": "538340155978324",
+  "meid": "23424377969259",
+  "phone_number": "+905589304495",
+  "sim_operator": "26201",
+  "sim_operator_name": "Telekom DE",
+  "sim_country": "de",
+  "sim_serial": "8903664240903896518"
+}

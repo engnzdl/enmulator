@@ -1,0 +1,19 @@
+{
+  "name": "OPPO Find X6 Pro",
+  "brand": "OPPO",
+  "model": "PGEM10",
+  "manufacturer": "OPPO",
+  "device": "OP5567L1",
+  "fingerprint": "OPPO/PGEM10/OP5567L1:13/SKQ1.221012.001/V13.1.0.563:user/release-keys",
+  "dpi": 450,
+  "resolution_w": 1440,
+  "resolution_h": 3168,
+  "imei": "521998566741489",
+  "imei2": "507413327967090",
+  "meid": "95599424489058",
+  "phone_number": "+905636068519",
+  "sim_operator": "26201",
+  "sim_operator_name": "Telekom DE",
+  "sim_country": "de",
+  "sim_serial": "8905596698493900478"
+}

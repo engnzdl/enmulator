@@ -3,6 +3,79 @@ use crate::device::Device;
 use std::fs;
 use std::path::PathBuf;
 
+/// Windows reserved filenames that cannot be used as directory names.
+const WINDOWS_RESERVED: &[&str] = &[
+    "con", "prn", "aux", "nul",
+    "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9",
+    "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
+];
+
+/// Sanitize a user-provided name into a safe device ID.
+/// Keeps only alphanumeric and `-`. Everything else becomes `_`.
+/// Rejects Windows reserved filenames (CON, NUL, COM1, etc.) by prefixing `dev_`.
+pub fn sanitize_id(name: &str) -> String {
+    let s: String = name
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_alphanumeric() || c == '-' { c } else { '_' })
+        .collect();
+    // Collapse consecutive underscores and trim leading/trailing ones
+    let mut result = String::new();
+    let mut prev_under = false;
+    for c in s.chars() {
+        if c == '_' {
+            if !prev_under { result.push(c); }
+            prev_under = true;
+        } else {
+            result.push(c);
+            prev_under = false;
+        }
+    }
+    let trimmed = result.trim_matches('_').to_string();
+
+    // Prefix Windows reserved names to avoid filesystem errors on Windows
+    if WINDOWS_RESERVED.contains(&trimmed.as_str()) {
+        format!("dev_{}", trimmed)
+    } else {
+        trimmed
+    }
+}
+
+/// Write the `~/.android/avd/<avd_name>.ini` pointer file that avdmanager expects
+/// so the emulator can find the AVD by name. Required after a directory-level clone.
+pub fn register_avd_at_path(avd_name: &str, avd_dir: &PathBuf) -> Result<(), String> {
+    let home = dirs::home_dir().ok_or("Cannot determine home directory")?;
+    let android_avd_dir = home.join(".android").join("avd");
+    fs::create_dir_all(&android_avd_dir).map_err(|e| e.to_string())?;
+
+    let ini_path = android_avd_dir.join(format!("{}.ini", avd_name));
+    let avd_path_str = avd_dir.to_str().ok_or("AVD path is not valid UTF-8")?;
+    // Android SDK expects forward slashes even on Windows
+    let avd_path_fwd = avd_path_str.replace('\\', "/");
+    let content = format!("path={}\npath.rel=avd/{}.avd\n", avd_path_fwd, avd_name);
+    fs::write(&ini_path, content).map_err(|e| format!("Failed to write AVD ini: {}", e))?;
+
+    // Update AvdId= in the clone's config.ini so it matches the new name
+    let config_ini = avd_dir.join("config.ini");
+    if config_ini.exists() {
+        if let Ok(content) = fs::read_to_string(&config_ini) {
+            let updated: String = content
+                .lines()
+                .map(|line| {
+                    if line.starts_with("AvdId=") {
+                        format!("AvdId={}", avd_name)
+                    } else {
+                        line.to_string()
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+            let _ = fs::write(&config_ini, updated);
+        }
+    }
+    Ok(())
+}
+
 /// Hardcoded fallback device IDs to try when creating an AVD.
 /// We override resolution/DPI via config.ini afterward, so any modern device works.
 const FALLBACK_DEVICE_IDS: &[&str] = &["pixel_6_pro", "pixel_6", "pixel_5", "pixel_4", "pixel", "Nexus_5X", "Nexus_5"];
@@ -79,6 +152,7 @@ pub fn create_avd(
         port: 0,
         root_enabled: false,
         adb_enabled: true,
+        writable_system: false,
         created_at: chrono::Utc::now().to_rfc3339(),
     })
 }
@@ -125,6 +199,26 @@ fn override_config_ini(avd_path: &PathBuf, width: u16, height: u16, dpi: u16) ->
         .map_err(|e| format!("Failed to write config.ini: {}", e))?;
 
     Ok(())
+}
+
+/// Unregister an AVD from avdmanager. Called before deleting the AVD directory
+/// to avoid orphaned .ini files in ~/.android/avd/.
+pub fn delete_avd(sdk_path: &PathBuf, avd_name: &str) -> Result<(), String> {
+    let avdmanager = sdk::get_avdmanager_path(sdk_path);
+    let output = sdk::sdk_command(&avdmanager)
+        .args(["delete", "avd", "--name", avd_name])
+        .output()
+        .map_err(|e| format!("avdmanager error: {}", e))?;
+    if output.status.success() {
+        return Ok(());
+    }
+    let stderr = String::from_utf8_lossy(&output.stderr).to_lowercase();
+    // Treat "not found" / "does not exist" as success — AVD was never registered
+    if stderr.contains("not found") || stderr.contains("does not exist") || stderr.is_empty() {
+        Ok(())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).to_string())
+    }
 }
 
 pub fn list_device_definitions(sdk_path: &PathBuf) -> Result<Vec<String>, String> {

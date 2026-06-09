@@ -1,0 +1,19 @@
+{
+  "name": "Lenovo Legion Y90",
+  "brand": "Lenovo",
+  "model": "L71061",
+  "manufacturer": "Lenovo",
+  "device": "L71061",
+  "fingerprint": "Lenovo/L71061_ZUI_ROW/L71061:12/SP1A.210812.016/S100004_221209_ROW:user/release-keys",
+  "dpi": 394,
+  "resolution_w": 1080,
+  "resolution_h": 2460,
+  "imei": "205470778814614",
+  "imei2": "193401013341570",
+  "meid": "55074616144609",
+  "phone_number": "+905981751465",
+  "sim_operator": "20810",
+  "sim_operator_name": "SFR",
+  "sim_country": "fr",
+  "sim_serial": "8905129153231243665"
+}

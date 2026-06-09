@@ -1,0 +1,19 @@
+{
+  "name": "Huawei Mate 60",
+  "brand": "HUAWEI",
+  "model": "BRA-AL00",
+  "manufacturer": "HUAWEI",
+  "device": "BRAE",
+  "fingerprint": "HUAWEI/BRA-AL00/BRAE:13/HUAWEIBRA-AL00/104.0.0.218(C00E218R7P1):user/release-keys",
+  "dpi": 436,
+  "resolution_w": 1080,
+  "resolution_h": 2720,
+  "imei": "275237786392510",
+  "imei2": "728014969456021",
+  "meid": "24300528039519",
+  "phone_number": "+905985693196",
+  "sim_operator": "20810",
+  "sim_operator_name": "SFR",
+  "sim_country": "fr",
+  "sim_serial": "8902427007886498789"
+}

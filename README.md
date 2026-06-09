@@ -14,10 +14,10 @@
 <p align="center"><strong>Cross-Platform Android Emulator Manager</strong></p>
 
 <p align="center">
-  <a href="https://github.com/engnzdl/enmulator/releases/download/v0.1.0/Enmulator_0.1.0_aarch64.dmg"><img src="https://img.shields.io/badge/download-macOS%20.dmg-000?style=for-the-badge&logo=apple" alt="macOS"></a>
-  <a href="https://github.com/engnzdl/enmulator/releases/download/v0.1.0/Enmulator_0.1.0_x64_en-US.msi"><img src="https://img.shields.io/badge/download-Windows%20.msi-0078D6?style=for-the-badge&logo=windows" alt="Windows"></a>
-  <a href="https://github.com/engnzdl/enmulator/releases/download/v0.1.0/Enmulator_0.1.0_amd64.AppImage"><img src="https://img.shields.io/badge/download-Linux%20.AppImage-FCC624?style=for-the-badge&logo=linux" alt="Linux AppImage"></a>
-  <a href="https://github.com/engnzdl/enmulator/releases/download/v0.1.0/Enmulator_0.1.0_amd64.deb"><img src="https://img.shields.io/badge/download-Linux%20.deb-FCC624?style=for-the-badge&logo=linux" alt="Linux deb"></a>
+  <a href="https://github.com/engnzdl/enmulator/releases/latest/download/Enmulator_aarch64.dmg"><img src="https://img.shields.io/badge/download-macOS%20.dmg-000?style=for-the-badge&logo=apple" alt="macOS"></a>
+  <a href="https://github.com/engnzdl/enmulator/releases/latest/download/Enmulator_x64_en-US.msi"><img src="https://img.shields.io/badge/download-Windows%20.msi-0078D6?style=for-the-badge&logo=windows" alt="Windows"></a>
+  <a href="https://github.com/engnzdl/enmulator/releases/latest/download/enmulator_amd64.AppImage"><img src="https://img.shields.io/badge/download-Linux%20.AppImage-FCC624?style=for-the-badge&logo=linux" alt="Linux AppImage"></a>
+  <a href="https://github.com/engnzdl/enmulator/releases/latest/download/enmulator_amd64.deb"><img src="https://img.shields.io/badge/download-Linux%20.deb-FCC624?style=for-the-badge&logo=linux" alt="Linux deb"></a>
 </p>
 
 <p align="center">
@@ -29,367 +29,194 @@
   <img src="screenshots/4-settings.png" alt="Settings" width="45%">
 </p>
 
-<p align="center">Create, manage, and customize Android Virtual Devices with a premium desktop UI.<br>Built with Tauri 2 + React + Rust.</p>
+<p align="center">Create, manage, and fully customize Android Virtual Devices with a premium desktop UI.<br>Built with Tauri 2 + React + Rust. No Android Studio required.</p>
 
 ---
 
-##  Why Enmulator?
+## Why Enmulator?
 
-Managing Android emulators via command line is tedious. Android Studio is heavy and overkill if you just need AVDs. MuMuPlayer is Windows-only and closed-source.
+Managing Android emulators via command line is tedious. Android Studio is heavy and overkill for just running AVDs. MuMuPlayer is closed-source. Genymotion is expensive.
 
-**Enmulator** gives you a native, cross-platform desktop app that wraps the Android SDK tools in a beautiful, fast interface — no Android Studio required. 30 pre-loaded device profiles across 10 brands, batch operations, per-device proxy, GPS simulation, and more.
+**Enmulator** gives you a native, cross-platform desktop app that wraps the Android SDK tools in a fast, modern interface — with fingerprint spoofing, device identity management, root access, per-device proxy, and a headless REST API for CI/CD automation.
 
 ### vs The Alternatives
 
-| | Android Studio AVD | Genymotion Desktop | BlueStacks | LDPlayer | **Enmulator** |
+| | Android Studio AVD | Genymotion | BlueStacks | MuMuPlayer | **Enmulator** |
 |---|---|---|---|---|---|
-| **Platform** | macOS, Windows, Linux | macOS, Windows, Linux | Windows, macOS | Windows | **macOS, Windows, Linux** |
-| **Size** | ~2 GB (IDE) | ~400 MB | ~500 MB | ~300 MB | **~15 MB binary** |
-| **Price** | Free | **$479/yr** (Pro) | Free (ads) | Free (ads) | **Free · GPLv3** |
-| **Open Source** |  |  |  |  | ** ** |
-| **Focus** | Development | QA / CI | Gaming | Gaming | **Dev + Testing** |
-| **Fingerprint Profiles** |  |  (manual) |  |  | **30 built-in, 10 brands** |
-| **IMEI / SIM Spoofing** |  |  |  |  | **per-profile auto-apply** |
-| **Batch Operations** |  |  (Pro) |  (multi-instance) |  (sync) | **multi-select start/stop/clone/APK** |
-| **REST API** |  |  (Pro) |  |  | **built-in Actix-web server** |
-| **Proxy per Device** |  |  |  |  | **host/port + cert installer** |
-| **GPS Simulation** |  (extended controls) |  (widget) |  (basic) |  (basic) | **coordinate popup** |
-| **Root Access** | `adb root` | `adb root` | built-in | built-in | **toggle (Google APIs)** |
-| **Headless Mode** | `-no-window` |  (cloud) |  |  | **flag + auto-identity** |
-| **Dark UI** |  (IDE theme) |  |  |  | **premium dark theme** |
+| **Platform** | macOS, Win, Linux | macOS, Win, Linux | Win, macOS | macOS, Win | **macOS, Win, Linux** |
+| **Size** | ~2 GB (IDE) | ~400 MB | ~500 MB | ~600 MB | **~15 MB** |
+| **Price** | Free | **$479/yr** (Pro) | Free (ads) | Free (limited) | **Free · GPLv3** |
+| **Open Source** | ✗ | ✗ | ✗ | ✗ | **✓** |
+| **Fingerprint Profiles** | ✗ | ✗ (manual) | ✗ | ✓ presets | **66 built-in, 16 brands** |
+| **Device Identity Panel** | ✗ | ✗ | ✗ | ✓ | **✓ IMEI + SIM + phone** |
+| **Magisk Root** | ✗ | ✗ | ✓ built-in | ✓ built-in | **✓ one-click rootAVD** |
+| **Writable System** | ✗ | ✗ | ✓ | ✓ | **✓ toggle** |
+| **Batch Operations** | ✗ | ✓ (Pro) | ✓ | ✓ | **✓ start/stop/clone/APK** |
+| **REST API** | ✗ | ✓ (Pro) | ✗ | ✗ | **✓ built-in Actix-web** |
+| **Proxy per Device** | ✗ | ✓ | ✗ | ✗ | **✓ + CA cert installer** |
+| **File Explorer** | ✗ | ✓ | ✗ | ✗ | **✓ dual-pane host↔device** |
 
-##  Features
+---
+
+## Features
 
 ### Device Management
-- **Create** — 2-step wizard: pick a fingerprint profile + system image. Auto-generated random name.
-- **Start / Stop** — cold boot only (no snapshot save/load). Auto-detects manual emulator closes via polling.
-- **Clone** — duplicates an AVD without snapshots. Auto-generated clone name.
-- **Delete** — removes AVD directory and config entirely.
-- **Batch** — multi-select: start, stop, delete, install APK across multiple devices at once.
 
-### 30 Pre-Loaded Fingerprint Profiles
+- **Create** — 2-step wizard: pick a fingerprint profile + system image. Auto-downloads missing images. Auto-generated random device name.
+- **Start / Stop** — cold boot (no snapshot save/load). Detects manual emulator closes via 5s polling.
+- **Clone** — copies AVD directory, registers the clone with avdmanager, excludes snapshots.
+- **Delete** — stops the emulator if running, unregisters from avdmanager, removes AVD data.
+- **Batch** — multi-select mode: start, stop, delete, install APK across multiple devices simultaneously.
+- **Drag & drop APK** — drop a `.apk` file onto a device card to install instantly.
+
+### 66 Pre-Loaded Device Profiles · 16 Brands
 
 | Brand | Models |
 |---|---|
-| **Samsung** | S25 Ultra, S24 Ultra, S24, S23 Ultra, A55 |
-| **Pixel** | 9 Pro, 9, 9a, 8 Pro |
-| **Xiaomi** | 15 Ultra, 15, 14 |
-| **OnePlus** | 13, 12 |
-| **Huawei** | Mate 60 Pro, P70 Pro, P60 Pro |
-| **Motorola** | Razr 50 Ultra, Edge 50 Ultra |
-| **OPPO** | Find X8 Pro, Reno 12 Pro |
+| **Samsung** | S25 Ultra, S24 Ultra, S24, S23 Ultra, A55, A54 5G, Galaxy Z Flip5 |
+| **Google** | Pixel 9 Pro, 9, 9a, 8 Pro, 8 |
+| **Xiaomi** | 15 Ultra, 15, 14 Pro, 14, 13 Ultra, MIX Fold 3 |
+| **OnePlus** | 13, 12, Ace 3 |
+| **OPPO** | Find X8 Pro, Find X6 Pro, Find N3, Find N3 Flip, Reno 12 Pro, Reno10 Pro+ |
+| **Huawei** | Mate 60 Pro, Mate 60, P70 Pro, P60 Pro, P60, nova 11 Pro |
+| **HONOR** | 200 Pro, Magic6 Pro, X9b |
+| **vivo** | X100 Pro, X100, X Fold3 Pro, Y100 |
+| **Sony** | Xperia 1 VI, 5 VI, 1 V, 5 V |
+| **Motorola** | Razr 50 Ultra, Edge 50 Ultra, G54 5G, Moto G34 5G |
+| **realme** | GT 7 Pro, GT 6, GT5 Pro, GT Neo5, 14 Pro+, 12 Pro+ |
 | **Nothing** | Phone 3a, Phone 2 |
-| **Asus** | ROG Phone 9, Zenfone 11 Ultra |
-| **Sony** | Xperia 1 VI, Xperia 5 VI |
-| **Realme** | GT 7 Pro, GT 6, 14 Pro+ |
+| **ASUS** | ROG Phone 9, Zenfone 11 Ultra |
+| **SHARP** | AQUOS sense8, R8s Pro, wish2, zero6, AQUOS V |
+| **Lenovo** | Legion Y90, Legion Phone Duel 2 Pro |
+| **TCL** | 40 X |
 
-Each profile includes: build fingerprint, device codename, resolution, DPI, **IMEI, phone number, SIM operator, ICCID**.
+Each profile includes: build fingerprint, device codename, resolution, DPI, **IMEI 1 & 2, MEID, phone number, SIM operator (MCC+MNC), SIM country, ICCID**.
 
-### Identity Spoofing
-- Per-profile identity auto-applied on device boot via `adb root` + `setprop`
-- **IMEI 1 & 2**, **MEID** — generated with valid Luhn checksums
-- **SIM operator** — MCC+MNC, display name, ISO country (brand-appropriate per region)
-- **Phone number**, **ICCID** — unique per profile
-- *Note: `ro.product.*` (model, brand) is immutable — determined by the system image*
+### Device Identity Panel
+
+Modelled after MuMuPlayer's Device tab. Available for every device in the right panel:
+
+- **Preset picker** — select brand → model → auto-fills all identity fields from the bundled profile
+- **Custom mode** — manually enter any field
+- **IMEI generator** — ↻ button generates a new Luhn-valid 15-digit IMEI
+- **Fields:** IMEI 1 & 2, Phone Number, SIM Operator (code + display name), SIM Country
+- **Apply** — pushes all fields to the running device via `adb root` + `setprop`
+
+### Root & System Access
+
+| Feature | How it works | Requirement |
+|---|---|---|
+| **ADB Root** | `adb root` — restarts adbd as root | `google_apis` (non-Play Store) image |
+| **Magisk Root** | rootAVD patches ramdisk.img with Magisk | Device must be stopped; any image |
+| **System RO/RW** | `adb root` + `adb remount` toggle | ADB root active; runtime only |
+
+> **Tip:** For apps that require `su` (e.g. testing root-requiring flows), use **Magisk Root**. For quick ADB access, **ADB Root** is sufficient.
 
 ### Quick Actions
-- ** GPS** — set custom coordinates (Istanbul default, popup input)
-- ** Files** — dual-pane file explorer (host + device)
-- ** Root** — toggle `adb root` on Google APIs images
-- ** Emu Detection Bypass** — set props to hide emulator from detection
+
+- **📍 GPS** — set custom coordinates via popup (default: Istanbul)
+- **📁 Files** — dual-pane file explorer (host ↔ device). Browse, upload, download files. Host panel supports full directory navigation.
+- **🔒 ADB Root / 🔓 Unroot** — toggle `adb root` (Google APIs images). Clear error message when image doesn't support it.
+- **💾 System RO / System RW** — toggle `/system` writable (requires ADB root). Runtime only — resets on reboot.
+- **🧲 Magisk Root** — patch the system image's ramdisk.img with Magisk via bundled rootAVD script.
+- **🛡️ Bypass Detection** — set `ro.build.tags`, `ro.secure`, `ro.debuggable` props to production values.
+- **ADB Serial** — shows `emulator-{port}` string when device is running for quick `adb -s` access.
 
 ### Per-Device Proxy
-- HTTP proxy host + port per device
-- Enable/disable toggle
-- Certificate installer — push CA cert to system store (requires root)
 
-### Settings Panel
-Configurable via ⚙ gear icon:
-- Android SDK path (auto-detect + manual browse)
-- Default device: API level, ABI, system image tag
-- Behavior: headless mode default, auto-start API server
-- Advanced: devices directory, API server port
+- HTTP proxy host + port per device
+- Enable/disable toggle (applies via `adb shell settings put global http_proxy`)
+- **Certificate installer** — picks a `.crt/.pem` file, computes the correct `<subject_hash_old>.0` filename using the device's openssl, installs to `/system/etc/security/cacerts/` (requires ADB root + writable system)
 
 ### Headless REST API
 
-Built-in Actix-web server on configurable port (default: 8080). All responses are JSON.
+Built-in Actix-web server, configurable port (default: 8080). Start from Settings or via `auto_start_api`. All responses are JSON.
 
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/devices` | List all devices |
 | `POST` | `/api/devices` | Create a new device |
-| `POST` | `/api/devices/{id}/start` | Start a device (headless) |
-| `POST` | `/api/devices/{id}/stop` | Stop a device |
-| `DELETE` | `/api/devices/{id}` | Delete a device |
-| `POST` | `/api/devices/{id}/clone` | Clone a device |
+| `POST` | `/api/devices/{id}/start` | Start (headless) |
+| `POST` | `/api/devices/{id}/stop` | Stop |
+| `DELETE` | `/api/devices/{id}` | Delete |
+| `POST` | `/api/devices/{id}/clone` | Clone |
 | `POST` | `/api/devices/{id}/adb` | Run ADB shell command |
 | `GET` | `/api/devices/{id}/logcat` | SSE logcat stream |
 | `GET` | `/api/profiles` | List fingerprint profiles |
 
-#### `GET /api/devices`
-
-Returns all devices with their current state.
-
-```bash
-curl http://localhost:8080/api/devices
-```
-
 <details>
-<summary>Response</summary>
-
-```json
-[
-  {
-    "id": "ultra_emu",
-    "display_name": "Ultra_Emu",
-    "avd_name": "enmulator_ultra_emu",
-    "profile": "pixel_6_pro",
-    "fingerprint_profile": "Samsung S25 Ultra",
-    "api_level": 34,
-    "status": "running",
-    "port": 5554,
-    "root_enabled": true,
-    "adb_enabled": true,
-    "created_at": "2026-05-12T01:00:00+00:00"
-  }
-]
-```
-
-</details>
-
-#### `POST /api/devices`
-
-Create a new AVD.
+<summary>Example: create + start a device</summary>
 
 ```bash
+# Create
 curl -X POST http://localhost:8080/api/devices \
   -H "Content-Type: application/json" \
-  -d '{"name":"Test Device","api_level":34,"abi":"x86_64","tag":"google_apis"}'
-```
+  -d '{"name":"Test","api_level":34,"abi":"x86_64","tag":"google_apis"}'
 
-| Field | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `name` | string | yes | — | Display name (used as ID, lowercased) |
-| `api_level` | int | yes | — | Android API level (34 = Android 14) |
-| `abi` | string | no | `x86_64` | CPU architecture |
-| `tag` | string | no | `google_apis` | System image variant |
+# Start
+curl -X POST http://localhost:8080/api/devices/test/start
+# → {"port":5554}
 
-<details>
-<summary>Response → <code>201</code></summary>
-
-```json
-{
-  "id": "test_device",
-  "display_name": "Test Device",
-  "avd_name": "enmulator_test_device",
-  "profile": "pixel_6_pro",
-  "fingerprint_profile": null,
-  "api_level": 34,
-  "status": "stopped",
-  "port": 0,
-  "root_enabled": false,
-  "adb_enabled": true,
-  "created_at": "2026-05-12T02:00:00+00:00"
-}
-```
-
-</details>
-
-#### `POST /api/devices/{id}/start`
-
-Start a device in headless mode. Response includes the assigned port.
-
-```bash
-curl -X POST http://localhost:8080/api/devices/ultra_emu/start
-```
-
-<details>
-<summary>Response → <code>200</code></summary>
-
-```json
-{ "port": 5554 }
-```
-
-</details>
-
-#### `POST /api/devices/{id}/stop`
-
-Stop a running device.
-
-```bash
-curl -X POST http://localhost:8080/api/devices/ultra_emu/stop
-```
-
-<details>
-<summary>Response → <code>200</code></summary>
-
-```json
-{ "status": "stopped" }
-```
-
-</details>
-
-#### `DELETE /api/devices/{id}`
-
-Permanently delete a device and its AVD data.
-
-```bash
-curl -X DELETE http://localhost:8080/api/devices/ultra_emu
-```
-
-<details>
-<summary>Response → <code>200</code></summary>
-
-```json
-{ "deleted": "ultra_emu" }
-```
-
-</details>
-
-#### `POST /api/devices/{id}/clone`
-
-Clone an existing device (AVD data copied, snapshots excluded).
-
-```bash
-curl -X POST http://localhost:8080/api/devices/ultra_emu/clone \
+# ADB shell
+curl -X POST http://localhost:8080/api/devices/test/adb \
   -H "Content-Type: application/json" \
-  -d '{"target_name":"Ultra Emu Clone"}'
+  -d '{"cmd":"getprop ro.build.version.release"}'
+# → {"output":"14\n"}
+
+# Logcat (SSE)
+curl -N http://localhost:8080/api/devices/test/logcat
 ```
 
-<details>
-<summary>Response → <code>200</code></summary>
-
-```json
-{
-  "id": "ultra_emu_clone",
-  "display_name": "Ultra Emu Clone",
-  "avd_name": "enmulator_ultra_emu_clone",
-  "status": "stopped",
-  "port": 0,
-  ...
-}
-```
+All errors return `4xx` with `{"success": false, "error": "..."}`.
 
 </details>
 
-#### `POST /api/devices/{id}/adb`
+### Settings
 
-Execute an arbitrary ADB shell command on a running device.
+Configurable via ⚙ gear icon. **Settings take effect immediately** (no restart needed):
 
-```bash
-curl -X POST http://localhost:8080/api/devices/ultra_emu/adb \
-  -H "Content-Type: application/json" \
-  -d '{"cmd":"getprop ro.build.version.sdk"}'
-```
+| Setting | Default | Description |
+|---|---|---|
+| `sdk_path` | auto-detect | Android SDK root |
+| `devices_dir` | platform data dir | Where AVD data is stored |
+| `api_server_port` | `8080` | REST API port |
+| `default_headless` | `false` | Start without emulator window |
+| `auto_start_api` | `false` | Auto-start REST API on launch |
+| `default_api_level` | `34` | Preferred Android version |
+| `default_abi` | `x86_64` | Preferred CPU architecture |
+| `default_tag` | `google_apis` | Preferred system image variant |
 
-<details>
-<summary>Response → <code>200</code></summary>
+---
 
-```json
-{ "output": "34\n" }
-```
-
-</details>
-
-#### `GET /api/devices/{id}/logcat`
-
-Server-Sent Events (SSE) stream of real-time logcat output.
-
-```bash
-curl -N http://localhost:8080/api/devices/ultra_emu/logcat
-```
-
-<details>
-<summary>Response → <code>200 text/event-stream</code></summary>
-
-```
-data: 05-12 02:00:01.234  1234  1234 I ActivityManager: Start proc ...
-data: 05-12 02:00:01.456  1234  1235 D SurfaceFlinger: ...
-data: 05-12 02:00:01.678  1234  1236 W PackageManager: ...
-```
-
-Streams indefinitely until client disconnects.
-
-</details>
-
-#### `GET /api/profiles`
-
-List all available fingerprint profiles.
-
-```bash
-curl http://localhost:8080/api/profiles
-```
-
-<details>
-<summary>Response (<abbreviated>)</summary>
-
-```json
-[
-  {
-    "name": "Samsung S25 Ultra",
-    "brand": "samsung",
-    "model": "SM-S938B",
-    "device": "b5q",
-    "fingerprint": "samsung/b5qxxx/b5q:15/...",
-    "dpi": 500,
-    "resolution_w": 1440,
-    "resolution_h": 3120,
-    "imei": "351371505786517",
-    "imei2": "351371505786525",
-    "phone_number": "+905723649220",
-    "sim_operator": "28602",
-    "sim_operator_name": "Vodafone TR",
-    "sim_country": "tr",
-    "sim_serial": "8905641752952096082"
-  }
-]
-```
-
-</details>
-
-#### Error Format
-
-All errors return `4xx` with a consistent JSON body:
-
-```json
-{ "success": false, "error": "Device not found" }
-```
-
-### Architecture
-- **No Android Studio required** — only Android SDK command-line tools
-- **Cold boot only** — no snapshot save/load, clean state every time
-- **Auto port assignment** — 5554+ with 2-port increments, survives app restarts
-- **KVM acceleration** — auto-enabled on Linux when `/dev/kvm` is available
-- **Platform-native paths** — uses OS config/data dirs (`~/Library/Application Support`, `~/.config`, `%APPDATA%`)
-
-##  Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
 | **Desktop Shell** | [Tauri 2](https://v2.tauri.app/) (Rust) |
-| **Frontend** | React 18 + TypeScript + Vite |
-| **Backend** | Rust — 13 modules, ~25 Tauri commands |
-| **REST API** | Actix-web 4 |
-| **Styling** | CSS custom properties, premium dark theme |
+| **Frontend** | React 18 + TypeScript + Vite 5 |
+| **Backend** | Rust — 13 modules, 43 Tauri IPC commands |
+| **REST API** | Actix-web 4 (separate thread, shared state) |
+| **Styling** | CSS custom properties, Inter font, premium dark theme |
 | **Android** | SDK command-line tools (avdmanager, sdkmanager, adb, emulator) |
+| **Root** | rootAVD + Magisk (bundled) |
 
 ### Rust Modules
 
 ```
 src-tauri/src/
-├── main.rs          Tauri command handlers (25 commands)
-├── emulator.rs      Emulator process lifecycle, port management
-├── sdk.rs           SDK detection, sdkmanager/avdmanager wrapper
-├── avd_manager.rs   AVD creation + config.ini overrides
-├── adb_bridge.rs    ADB shell, setprop, install APK, push/pull
-├── fingerprint.rs   Profile CRUD + apply_to_device identity
-├── device.rs        Device struct + persistent store (JSON)
-├── config.rs        App configuration (JSON)
-├── paths.rs         Cross-platform config/data dirs
-├── extras.rs        Screen recording, GPS, logcat
-├── bypass.rs        Emulator detection bypass (setprop)
-├── set_proxy.rs     Per-device HTTP proxy
-├── api_server.rs    Actix-web REST API server
+├── main.rs          43 Tauri command handlers, batch ops, cert installer
+├── emulator.rs      Process lifecycle, port management (5554+ auto-assign)
+├── sdk.rs           SDK detection, platform-aware binary names, sdkmanager wrapper
+├── avd_manager.rs   AVD creation, clone registration, config.ini overrides
+├── adb_bridge.rs    shell, setprop, install_apk, push, pull
+├── fingerprint.rs   Profile CRUD + apply_to_device (setprop identity)
+├── device.rs        Device struct + Arc<Mutex> persistent store
+├── config.rs        App config (Arc<Mutex<Config>>, live updates)
+├── paths.rs         Cross-platform dirs + resource bundle discovery
+├── extras.rs        Screen recording, GPS, clipboard sync, logcat
+├── bypass.rs        Emulator detection bypass
+├── set_proxy.rs     Per-device HTTP proxy store
+├── api_server.rs    Actix-web REST server (shared Arc<Mutex<Config>>)
 └── build.rs         Tauri build script
 ```
 
@@ -397,90 +224,84 @@ src-tauri/src/
 
 ```
 src/components/
-├── App.tsx              Main layout, device list, state management
-├── DeviceCard.tsx       Sidebar device card with actions
-├── CreateWizard.tsx     2-step creation modal with live progress
-├── QuickActions.tsx     GPS, Files, Root, Bypass buttons
-├── ProxyCard.tsx        Proxy host/port + cert installer
-├── FileExplorer.tsx     Dual-pane file browser
-├── SettingsPanel.tsx    Configuration modal
+├── DeviceCard.tsx          Sidebar card: status dot, drag-drop APK
+├── CreateWizard.tsx        2-step wizard with live download progress bar
+├── DeviceIdentityPanel.tsx Brand/model picker, IMEI generator, SIM fields
+├── QuickActions.tsx        GPS, Files, ADB Root, System RW, Magisk, Bypass
+├── ProxyCard.tsx           Proxy toggle + CA cert installer
+├── FileExplorer.tsx        Dual-pane file browser (host nav + device nav)
+└── SettingsPanel.tsx       SDK path, defaults, headless, API server
 ```
 
-##  Quick Start
+---
+
+## Quick Start
 
 ### Prerequisites
 
 - [Android SDK Command-line Tools](https://developer.android.com/studio#command-line-tools-only) (or Android Studio)
-- At least one system image (downloadable from within the app)
-- [Rust](https://rustup.rs/) + [Node.js](https://nodejs.org/) (for building from source)
+- At least one downloaded system image (the app can download them for you)
+- [Rust](https://rustup.rs/) + [Node.js 20+](https://nodejs.org/) *(for building from source only)*
 
-### Install
+### Install from Release
+
+Download the installer for your platform from [Releases](https://github.com/engnzdl/enmulator/releases/latest) and run it.
+
+### Build from Source
 
 ```bash
-# Clone
-git clone https://github.com/engnzdl/enmulator.git
+git clone --recurse-submodules https://github.com/engnzdl/enmulator.git
 cd enmulator
-
-# Install dependencies
 npm install
-
-# Run (two terminals or combined)
-npx vite --port 1420                    # Terminal 1: frontend
-export PATH="$HOME/.cargo/bin:$PATH"    # Terminal 2: backend
 npm run tauri dev
 ```
 
 ### First Launch
 
-1. The app auto-detects your Android SDK. If not found, configure the path in Settings (⚙).
-2. Create your first device: click **+ New Device** → pick a profile → select system image → create.
-3. Click **Start** — the emulator boots (cold boot, ~30–60s). Profile identity (IMEI, operator) is auto-applied.
-4. Use Quick Actions for GPS, file browsing, root, or emulator detection bypass.
+1. The app auto-detects your Android SDK (`ANDROID_HOME` / `ANDROID_SDK_ROOT` / platform default paths). If not found → Settings ⚙ → SDK Path → Browse.
+2. Click **+ New Device** → pick a device profile (optional, sets resolution/DPI/identity) → select system image → **Create Device**. Missing images are downloaded automatically.
+3. Click **▶ Start** on any device card. Cold boot takes ~30–60s. Identity (IMEI, operator, phone number) is auto-applied after boot completes.
+4. Use the **Device Identity** panel to change identity on the fly while the device is running.
+5. Use **Quick Actions** for GPS, file transfer, root, writable system, or Magisk root.
 
-##  Configuration
+---
 
-Settings are stored per-platform:
-- **macOS:** `~/Library/Application Support/enmulator/config.json`
-- **Linux:** `~/.config/enmulator/config.json`
-- **Windows:** `%APPDATA%/enmulator/config.json`
+## Platform Notes
 
-Devices and profiles are stored in the same location hierarchy.
+| Platform | Notes |
+|---|---|
+| **macOS** | Apple Silicon (ARM64) and Intel (x86_64) builds available. KVM not applicable. |
+| **Windows** | Requires [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) (pre-installed on Windows 11). HAXM recommended for hardware acceleration. |
+| **Linux** | KVM is auto-enabled when `/dev/kvm` exists. Run `sudo usermod -aG kvm $USER` if needed. |
 
-| Setting | Default | Description |
-|---|---|---|
-| `sdk_path` | auto-detect | Android SDK root directory |
-| `devices_dir` | platform data dir | Where AVD data is stored |
-| `api_server_port` | 8080 | Headless REST API port |
-| `default_headless` | false | Start devices without window |
-| `auto_start_api` | false | Auto-start API server on launch |
-| `default_api_level` | 34 | Preferred Android API level |
-| `default_abi` | x86_64 | Preferred CPU architecture |
-| `default_tag` | google_apis | Preferred system image variant |
+### System Requirements
 
-##  Building
+- **macOS:** 12.0+ (Monterey)
+- **Windows:** 10+ (x64)
+- **Linux:** Ubuntu 20.04+ / Debian 11+ / Fedora 36+ with `libwebkit2gtk-4.1` and `libgtk-3`
+- **RAM:** 8 GB+ recommended (each emulator uses 2–4 GB)
+- **Storage:** SSD recommended for AVD disk images
 
-### Prerequisites
+---
 
-1. Generate app icons and place them in `src-tauri/icons/`:
-   - `icon.icns` (macOS, 1024x1024)
-   - `icon.ico` (Windows, 256x256)
-   - `32x32.png`, `128x128.png`, `128x128@2x.png` (Linux + generic)
+## Limitations
 
-   You can generate these from any 1024x1024 PNG using:
-   ```bash
-   # macOS: use iconutil or online converter
-   # Linux: sudo apt install icnsutils
-   png2icns src-tauri/icons/icon.icns icon-1024.png
-   ```
+- **`ro.product.*` properties** (brand, model, manufacturer) are immutable — set by the system image, not the profile. Only mutable props (IMEI, SIM, phone) are applied via `setprop`.
+- **`adb root`** only works on `google_apis` (non-Play Store) images. For Play Store images, use **Magisk Root**.
+- **Writable system** (`adb remount`) is runtime-only — changes reset on reboot. Affected by dm-verity on API 29+.
+- **Magisk Root** patches the shared ramdisk.img — all AVDs using the same system image are affected.
+- **ARM64 system images** only run natively on Apple Silicon. Use `x86_64` on Intel Macs, Windows, and Linux.
+- **Wayland** — headless mode works everywhere; windowed mode requires XWayland on Wayland-only desktops.
 
-2. Enable bundling in `src-tauri/tauri.conf.json`:
-   ```json
-   "bundle": { "active": true }
-   ```
+---
 
-### Production Build
+## Building
 
 ```bash
+# Development
+npm run tauri dev
+
+# Production bundle
 npm run tauri build
 ```
 
@@ -488,99 +309,114 @@ npm run tauri build
 |---|---|
 | **macOS** | `src-tauri/target/release/bundle/dmg/Enmulator_*.dmg` |
 | **Windows** | `src-tauri/target/release/bundle/msi/Enmulator_*.msi` |
-| **Linux** | `src-tauri/target/release/bundle/deb/enmulator_*.deb` + `.AppImage` |
+| **Linux** | `…/deb/enmulator_*.deb` + `…/appimage/*.AppImage` |
 
-The binary is ~15 MB (plus Android SDK tools at runtime).
+CI builds run automatically on tag push via GitHub Actions (macOS ARM64 + x86_64, Windows x64, Linux x64).
 
-##  Tauri Commands (API Reference)
+---
 
-All available IPC commands for frontend invocation:
+## IPC Command Reference
+
+<details>
+<summary>All 43 Tauri commands</summary>
 
 | Command | Args | Returns |
 |---|---|---|
-| `detect_sdk_cmd` | — | SDK path string |
+| `detect_sdk_cmd` | — | SDK path |
 | `list_available_images_cmd` | — | `Vec<SystemImage>` |
-| `install_system_image_cmd` | `package` | streams `download-progress` events |
+| `install_system_image_cmd` | `package` | streams `download-progress` |
 | `list_devices` | — | `Vec<Device>` |
-| `create_device` | name, api_level, abi, tag, fingerprint_profile | `Device` |
-| `delete_device` | id | — |
-| `clone_device` | source_id, target_name | `Device` |
-| `start_device` | id, headless | port: u16 |
-| `stop_device` | id | — |
-| `check_device_alive` | id | bool |
-| `batch_start` / `batch_stop` / `batch_delete` | ids | `BatchResult` |
-| `adb_shell` | id, cmd | stdout string |
-| `install_apk` | id, apk_path | — |
-| `set_device_proxy` / `enable_proxy` | id, host, port, enabled | — |
+| `create_device` | `name, api_level, abi, tag, fingerprint_profile?` | `Device` |
+| `delete_device` | `id` | — |
+| `clone_device` | `source_id, target_name` | `Device` |
+| `start_device` | `id, headless` | `port: u16` |
+| `stop_device` | `id` | — |
+| `check_device_alive` | `id` | `bool` |
+| `batch_start` | `ids` | `BatchResult` |
+| `batch_stop` | `ids` | `BatchResult` |
+| `batch_delete` | `ids` | `BatchResult` |
+| `adb_shell` | `id, cmd` | `String` |
+| `install_apk` | `id, apk_path` | `String` |
+| `set_device_proxy` | `id, host, port, enabled` | — |
+| `enable_proxy` | `id` | `ProxyConfig?` |
 | `list_profiles` | — | `Vec<FingerprintProfile>` |
-| `create_profile` / `delete_profile` | profile / name | — |
-| `apply_profile` | device_id, profile_name | — |
-| `set_device_identity` | device_id, imei?, imei2?, ... | — |
-| `start_screen_record` / `stop_screen_record` | id | — |
-| `clipboard_sync` | id, direction | clipboard content |
-| `gps_set` | id, lat, lon | — |
-| `logcat_start` | id | streams `logcat-line` events |
-| `start_api_server` / `stop_api_server` | port | — |
-| `get_config` / `update_config` | config fields | — |
-| `set_sdk_path` | path | — |
-| `bypass_detection` | id | — |
-| `list_files` / `pull_file` / `push_file` | id, path | — |
-| `toggle_root` | id | — |
-| `install_cert` | id, cert_path | — |
+| `create_profile` | `profile` | `FingerprintProfile` |
+| `delete_profile` | `name` | — |
+| `apply_profile` | `device_id, profile_name` | — |
+| `set_device_identity` | `device_id, imei?, imei2?, meid?, phone_number?, sim_operator?, sim_operator_name?, sim_country?, sim_serial?` | — |
+| `toggle_root` | `id` | `String` |
+| `toggle_writable_system` | `id` | `String` |
+| `root_with_magisk` | `id` | `String` |
+| `bypass_detection` | `id` | `String` |
+| `start_screen_record` | `id` | — |
+| `stop_screen_record` | `id` | `String` (local path) |
+| `clipboard_sync` | `id, direction, text?` | `String` |
+| `gps_set` | `id, lat, lon` | — |
+| `logcat_start` | `id` | streams `logcat-line` |
+| `start_api_server` | `port` | `String` |
+| `stop_api_server` | — | `String` |
+| `get_config` | — | `Config` |
+| `set_sdk_path` | `path` | — |
+| `update_config` | `sdk_path?, devices_dir?, api_server_port?, default_headless?, auto_start_api?, default_api_level?, default_abi?, default_tag?` | — |
+| `list_device_templates` | — | `Vec<String>` |
+| `list_files` | `id, path` | `Vec<FileEntry>` |
+| `list_host_files` | `path` | `Vec<FileEntry>` |
+| `pull_file` | `id, remote_path, local_path` | — |
+| `push_file` | `id, local_path, remote_path` | — |
+| `install_cert` | `id, cert_path` | `String` |
 
-##  Requirements
+</details>
 
-- **macOS:** 12.0+ (Monterey or later)
-- **Windows:** 10+ with [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) (pre-installed on Windows 11)
-- **Linux:** Ubuntu 20.04+ / Debian 11+ / Fedora 36+ with `libwebkit2gtk-4.1` and `libgtk-3`
+---
 
-### Recommended
-- KVM enabled on Linux for hardware acceleration (`sudo usermod -aG kvm $USER`)
-- At least 8 GB RAM for running multiple emulators
-- SSD storage for AVD disk images
+## Roadmap
 
-##  Limitations & Known Issues
-
-- **`ro.product.*` properties** (model, brand, manufacturer) are immutable — determined by the system image, not the profile
-- **Google APIs images** required for `adb root` (default selection)
-- **ARM64 system images** only work on Apple Silicon Macs (use x86_64 on Intel/AMD)
-- **Wayland** — non-headless mode requires XWayland on Wayland-only desktops
-- Config and profile paths are CWD-relative in development builds (production uses platform directories)
-
-##  Roadmap
-
-- [ ] Release build packaging (.dmg, .msi, .AppImage)
-- [ ] Custom fingerprint profile editor UI
-- [ ] One-click Magisk installation for rooted images
+- [x] Cross-platform build (macOS ARM64 + x86_64, Windows, Linux)
+- [x] Device Identity Panel (brand/model picker, IMEI generator)
+- [x] Magisk Root via bundled rootAVD
+- [x] Writable System toggle
+- [x] 66 device profiles across 16 brands
+- [x] Headless REST API with SSE logcat
+- [x] Dual-pane file explorer
+- [x] Batch operations
 - [ ] App install automation (batch APK from folder)
 - [ ] Device group presets (save/load sets of devices)
+- [ ] Screenshot capture
 - [ ] Network throttle / latency simulation
-- [ ] Screenshot capture with annotation
-- [ ] CI/CD for cross-platform release builds
+- [ ] More API endpoints (proxy, identity, recording via REST)
 
-##  Contributing
+---
 
-MIT licensed. Pull requests welcome.
+## Contributing
+
+GPLv3 licensed. Pull requests welcome.
 
 ```bash
-git clone https://github.com/engnzdl/enmulator.git
+git clone --recurse-submodules https://github.com/engnzdl/enmulator.git
 cd enmulator
 npm install
 npm run tauri dev
 ```
 
-Please ensure TypeScript (`npx tsc --noEmit`) and Rust (`cargo build`) both pass before submitting.
+Before submitting a PR, ensure both pass:
 
-##  License
+```bash
+npx tsc --noEmit        # TypeScript
+cargo build --manifest-path src-tauri/Cargo.toml  # Rust
+```
+
+---
+
+## License
 
 GNU General Public License v3.0
 
 © 2025 [engnzdl](https://github.com/engnzdl)
 
-This project is free software — you can use, modify, and distribute it under the terms of the GPL v3. Any derivative work must also be open-sourced under the same license (copyleft).
+Free software — use, modify, and distribute under GPL v3. Derivative works must also be open-sourced under the same license.
 
 ---
 
 <p align="center">
-  <sub>Built with  by <a href="https://github.com/engnzdl">engnzdl</a></sub>
+  <sub>Built with ❤ by <a href="https://github.com/engnzdl">engnzdl</a></sub>
 </p>

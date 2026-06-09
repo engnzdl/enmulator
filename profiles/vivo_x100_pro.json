@@ -1,0 +1,19 @@
+{
+  "name": "vivo X100 Pro",
+  "brand": "vivo",
+  "model": "V2324A",
+  "manufacturer": "vivo",
+  "device": "V2324A",
+  "fingerprint": "vivo/V2324A/V2324A:14/UP1A.231005.007/compile18120709:user/release-keys",
+  "dpi": 452,
+  "resolution_w": 1260,
+  "resolution_h": 2800,
+  "imei": "540300198812282",
+  "imei2": "103758982183518",
+  "meid": "32150556993636",
+  "phone_number": "+905279104920",
+  "sim_operator": "28601",
+  "sim_operator_name": "Turkcell",
+  "sim_country": "tr",
+  "sim_serial": "8909133025885529282"
+}

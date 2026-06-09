@@ -1,0 +1,19 @@
+{
+  "name": "vivo X Fold3 Pro",
+  "brand": "vivo",
+  "model": "V2337A",
+  "manufacturer": "vivo",
+  "device": "V2337A",
+  "fingerprint": "vivo/V2337A/V2337A:14/UP1A.231005.007/compile18120901:user/release-keys",
+  "dpi": 375,
+  "resolution_w": 2160,
+  "resolution_h": 2800,
+  "imei": "982360874221450",
+  "imei2": "044967695422905",
+  "meid": "33176803033718",
+  "phone_number": "+905740024247",
+  "sim_operator": "26201",
+  "sim_operator_name": "Telekom DE",
+  "sim_country": "de",
+  "sim_serial": "8909645242911398273"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "SHARP AQUOS V",
+  "brand": "SHARP",
+  "model": "SH-C02",
+  "manufacturer": "SHARP",
+  "device": "SH-C02",
+  "fingerprint": "sharp/SH-C02/SH-C02:10/Q/01.00.00:user/release-keys",
+  "dpi": 432,
+  "resolution_w": 1080,
+  "resolution_h": 2280,
+  "imei": "668474923381289",
+  "imei2": "750475956376111",
+  "meid": "05068392206120",
+  "phone_number": "+905644247162",
+  "sim_operator": "23430",
+  "sim_operator_name": "EE",
+  "sim_country": "gb",
+  "sim_serial": "8900912732571131444"
+}

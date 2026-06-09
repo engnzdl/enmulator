@@ -1,0 +1,19 @@
+{
+  "name": "SHARP AQUOS R8s Pro",
+  "brand": "SHARP",
+  "model": "SH-R80P",
+  "manufacturer": "SHARP",
+  "device": "SH-R80P",
+  "fingerprint": "sharp/SH-R80P/SH-R80P:14/54.0.A.1.100/01.00.00:user/release-keys",
+  "dpi": 450,
+  "resolution_w": 1260,
+  "resolution_h": 2730,
+  "imei": "792173175180956",
+  "imei2": "522017440785650",
+  "meid": "38276501334292",
+  "phone_number": "+905965798526",
+  "sim_operator": "23430",
+  "sim_operator_name": "EE",
+  "sim_country": "gb",
+  "sim_serial": "8905683060758742294"
+}

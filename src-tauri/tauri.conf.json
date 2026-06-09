@@ -1,6 +1,6 @@
 {
   "productName": "Enmulator",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "identifier": "com.enmulator.manager",
   "build": {
     "devUrl": "http://localhost:1420",
@@ -19,6 +19,12 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "resources": {
+      "../profiles": "profiles",
+      "rootAVD/rootAVD.sh": "rootAVD/rootAVD.sh",
+      "rootAVD/rootAVD.bat": "rootAVD/rootAVD.bat",
+      "rootAVD/Magisk.zip": "rootAVD/Magisk.zip"
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

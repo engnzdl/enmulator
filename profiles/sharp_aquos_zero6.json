@@ -1,0 +1,19 @@
+{
+  "name": "SHARP AQUOS zero6",
+  "brand": "SHARP",
+  "model": "SH-Z60",
+  "manufacturer": "SHARP",
+  "device": "SH-Z60",
+  "fingerprint": "sharp/SH-Z60/SH-Z60:11/S3-A.0.1/01.00.00:user/release-keys",
+  "dpi": 405,
+  "resolution_w": 1080,
+  "resolution_h": 2340,
+  "imei": "502498928396604",
+  "imei2": "593430729531337",
+  "meid": "77382295367925",
+  "phone_number": "+905464320027",
+  "sim_operator": "20810",
+  "sim_operator_name": "SFR",
+  "sim_country": "fr",
+  "sim_serial": "8907201947982040132"
+}

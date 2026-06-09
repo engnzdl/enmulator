@@ -1,0 +1,19 @@
+{
+  "name": "Sony Xperia 5 V",
+  "brand": "Sony",
+  "model": "XQ-DE54",
+  "manufacturer": "Sony",
+  "device": "pdx237",
+  "fingerprint": "Sony/pdx237_eea/pdx237:14/64.1.A.0.282/077/R14R:user/release-keys",
+  "dpi": 449,
+  "resolution_w": 1080,
+  "resolution_h": 2520,
+  "imei": "374645250201985",
+  "imei2": "670937154621728",
+  "meid": "28965980995828",
+  "phone_number": "+905137847884",
+  "sim_operator": "23430",
+  "sim_operator_name": "EE",
+  "sim_country": "gb",
+  "sim_serial": "8903104169433204450"
+}

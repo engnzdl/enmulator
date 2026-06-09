@@ -19,6 +19,15 @@ interface FingerprintProfile {
   dpi: number;
   resolution_w: number;
   resolution_h: number;
+  // Identity / SIM — optional, filled in by the user or left empty
+  imei?: string;
+  imei2?: string;
+  meid?: string;
+  phone_number?: string;
+  sim_operator?: string;
+  sim_operator_name?: string;
+  sim_country?: string;
+  sim_serial?: string;
 }
 
 interface CreateWizardProps {
@@ -49,6 +58,14 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
     dpi: 420,
     resolution_w: 1080,
     resolution_h: 1920,
+    imei: '',
+    imei2: '',
+    meid: '',
+    phone_number: '',
+    sim_operator: '',
+    sim_operator_name: '',
+    sim_country: '',
+    sim_serial: '',
   });
 
   // ── Step 1: System Image ──
@@ -205,6 +222,14 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
         dpi: 420,
         resolution_w: 1080,
         resolution_h: 1920,
+        imei: '',
+        imei2: '',
+        meid: '',
+        phone_number: '',
+        sim_operator: '',
+        sim_operator_name: '',
+        sim_country: '',
+        sim_serial: '',
       });
     } catch (e: any) {
       setError(e?.message ?? String(e));

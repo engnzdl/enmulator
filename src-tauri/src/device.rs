@@ -16,6 +16,8 @@ pub struct Device {
     pub port: u16,
     pub root_enabled: bool,
     pub adb_enabled: bool,
+    #[serde(default)]
+    pub writable_system: bool,
     pub created_at: String,
 }
 
@@ -29,7 +31,7 @@ impl DeviceStore {
     pub fn new(devices_dir: PathBuf) -> Self {
         fs::create_dir_all(&devices_dir).ok();
         let data_path = devices_dir.join("devices.json");
-        let devices = if data_path.exists() {
+        let mut devices: HashMap<String, Device> = if data_path.exists() {
             fs::read_to_string(&data_path)
                 .ok()
                 .and_then(|s| serde_json::from_str(&s).ok())
@@ -37,7 +39,16 @@ impl DeviceStore {
         } else {
             HashMap::new()
         };
-        Self { devices: Mutex::new(devices), devices_dir, data_path }
+        // Emulator processes don't survive app restarts — reset all runtime state
+        for dev in devices.values_mut() {
+            dev.status = "stopped".to_string();
+            dev.port = 0;
+            dev.root_enabled = false;
+            dev.writable_system = false;
+        }
+        let store = Self { devices: Mutex::new(devices), devices_dir, data_path };
+        store.save_to_disk();
+        store
     }
 
     fn save_to_disk(&self) {
@@ -83,6 +94,13 @@ impl DeviceStore {
     pub fn set_root(&self, id: &str, rooted: bool) {
         if let Some(dev) = self.devices.lock().unwrap().get_mut(id) {
             dev.root_enabled = rooted;
+        }
+        self.save_to_disk();
+    }
+
+    pub fn set_writable_system(&self, id: &str, writable: bool) {
+        if let Some(dev) = self.devices.lock().unwrap().get_mut(id) {
+            dev.writable_system = writable;
         }
         self.save_to_disk();
     }

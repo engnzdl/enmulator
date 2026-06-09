@@ -1,0 +1,19 @@
+{
+  "name": "realme GT Neo5",
+  "brand": "realme",
+  "model": "RMX3708",
+  "manufacturer": "realme",
+  "device": "RMX3708",
+  "fingerprint": "realme/RMX3708/RMX3708:13/TP1A.220624.014/S.V10_20231010:user/release-keys",
+  "dpi": 450,
+  "resolution_w": 1264,
+  "resolution_h": 2772,
+  "imei": "199401785721656",
+  "imei2": "486074459291462",
+  "meid": "27348164926932",
+  "phone_number": "+905881460801",
+  "sim_operator": "28601",
+  "sim_operator_name": "Turkcell",
+  "sim_country": "tr",
+  "sim_serial": "8902182792586318151"
+}

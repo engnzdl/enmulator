@@ -1,0 +1,19 @@
+{
+  "name": "Xiaomi MIX Fold 3",
+  "brand": "Xiaomi",
+  "model": "2308CPXD0G",
+  "manufacturer": "Xiaomi",
+  "device": "babylon",
+  "fingerprint": "Xiaomi/babylon_global/babylon:13/TKQ1.221114.001/V14.0.4.0.TMBCNXM:user/release-keys",
+  "dpi": 420,
+  "resolution_w": 1520,
+  "resolution_h": 2160,
+  "imei": "689610026031686",
+  "imei2": "478999496468915",
+  "meid": "53932478479297",
+  "phone_number": "+905207287417",
+  "sim_operator": "28602",
+  "sim_operator_name": "Vodafone TR",
+  "sim_country": "tr",
+  "sim_serial": "8905048693980608593"
+}

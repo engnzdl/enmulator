@@ -32,6 +32,7 @@ export default function FileExplorer({ device_id, onClose }: Props) {
   const [hostPath, setHostPath] = useState('');
   const [hostEntries, setHostEntries] = useState<FileEntry[]>([]);
   const [hostLoading, setHostLoading] = useState(false);
+  const [hostError, setHostError] = useState('');
 
   // Selected entries
   const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
@@ -66,20 +67,39 @@ export default function FileExplorer({ device_id, onClose }: Props) {
     listDevice(devicePath);
   }, [listDevice]);
 
-  // List host directory using a simple approach (no direct fs access from webview)
-  // We'll use the Tauri path from dialog. For now, show a static hint.
-  const listHost = async (path: string) => {
+  // List host directory via the Rust backend
+  const listHost = useCallback(async (path: string) => {
+    if (!path) return;
     setHostLoading(true);
+    setHostError('');
     try {
-      // We can't browse host filesystem directly from the webview without a backend command.
-      // Instead, we use the Tauri dialog to select files/folders.
-      // For browsing, we'd need a host_list_files command, but we'll keep it simple:
-      // The host panel shows the current path and allows picking files via dialog.
+      const entries = await invoke<FileEntry[]>('list_host_files', { path });
+      setHostEntries(entries);
       setHostPath(path);
+      setSelectedHost(null);
+    } catch (e: any) {
+      setHostError(String(e));
       setHostEntries([]);
     } finally {
       setHostLoading(false);
     }
+  }, []);
+
+  // Navigate host
+  const hostNavUp = () => {
+    if (!hostPath) return;
+    const sep = hostPath.includes('\\') ? '\\' : '/';
+    const parent = hostPath.substring(0, hostPath.lastIndexOf(sep)) || sep;
+    if (parent !== hostPath) listHost(parent);
+  };
+
+  const hostNavInto = (entry: FileEntry) => {
+    if (!entry.is_dir) return;
+    const sep = hostPath.includes('\\') ? '\\' : '/';
+    const newPath = hostPath.endsWith(sep)
+      ? `${hostPath}${entry.name}`
+      : `${hostPath}${sep}${entry.name}`;
+    listHost(newPath);
   };
 
   // Navigate device
@@ -95,7 +115,7 @@ export default function FileExplorer({ device_id, onClose }: Props) {
     listDevice(newPath);
   };
 
-  // Browse host folder via dialog
+  // Browse host folder via dialog, then list its contents
   const browseHost = async () => {
     try {
       const selected = await open({
@@ -104,8 +124,7 @@ export default function FileExplorer({ device_id, onClose }: Props) {
         title: 'Select a folder',
       });
       if (selected && typeof selected === 'string') {
-        setHostPath(selected);
-        setHostEntries([]);
+        await listHost(selected);
       }
     } catch (e) {
       console.error('Dialog error:', e);
@@ -167,18 +186,17 @@ export default function FileExplorer({ device_id, onClose }: Props) {
     }
   };
 
-  // Upload a specific host file (already have path)
+  // Upload selected host file to the current device directory
   const uploadHostFile = async () => {
-    if (!selectedHost) return;
+    if (!selectedHost || !hostPath) return;
+    const sep = hostPath.includes('\\') ? '\\' : '/';
+    const localPath = hostPath.endsWith(sep)
+      ? `${hostPath}${selectedHost}`
+      : `${hostPath}${sep}${selectedHost}`;
+    const remotePath = devicePath === '/' ? `/${selectedHost}` : `${devicePath}/${selectedHost}`;
     try {
-      const remotePath = devicePath === '/' ? `/${selectedHost}` : `${devicePath}/${selectedHost}`;
-      const localPath = hostPath ? `${hostPath}/${selectedHost}` : selectedHost;
       setStatus(`Uploading ${selectedHost}...`);
-      await invoke('push_file', {
-        id: device_id,
-        localPath,
-        remotePath,
-      });
+      await invoke('push_file', { id: device_id, localPath, remotePath });
       showStatus(`Uploaded ${selectedHost}`);
       listDevice(devicePath);
     } catch (e: any) {
@@ -201,45 +219,58 @@ export default function FileExplorer({ device_id, onClose }: Props) {
           <div className="fe-panel fe-host">
             <div className="fe-panel-header">
               <span>💻 Host</span>
-              <button className="fe-btn" onClick={browseHost} title="Browse folder">
-                📂 Browse
-              </button>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <button className="fe-btn" onClick={hostNavUp} disabled={!hostPath || hostLoading} title="Go up">
+                  ⬆ Up
+                </button>
+                <button className="fe-btn" onClick={browseHost} title="Browse folder">
+                  📂 Browse
+                </button>
+              </div>
             </div>
-            <div className="fe-path">{hostPath || 'No folder selected'}</div>
+            <div className="fe-path">{hostPath || 'No folder selected — click Browse'}</div>
             <div className="fe-actions">
               <button
                 className="fe-btn fe-btn-primary"
                 onClick={pickAndUpload}
                 disabled={deviceLoading}
+                title="Pick any file and upload to device"
               >
                 ⬆ Upload File
               </button>
-              {selectedHost && (
+              {selectedHost && !hostEntries.find(e => e.name === selectedHost)?.is_dir && (
                 <button className="fe-btn fe-btn-primary" onClick={uploadHostFile}>
                   ⬆ Upload Selected
                 </button>
               )}
             </div>
-            <ul className="fe-list">
-              {hostEntries.length === 0 && (
-                <li className="fe-hint">
-                  {hostPath
-                    ? 'No files shown. Use "Browse" to select a folder, or "Upload File" to pick a file.'
-                    : 'Select a folder using "Browse" above.'}
-                </li>
-              )}
-              {hostEntries.map((entry) => (
-                <li
-                  key={entry.name}
-                  className={`fe-item ${selectedHost === entry.name ? 'fe-selected' : ''}`}
-                  onClick={() => setSelectedHost(entry.name)}
-                >
-                  <span className="fe-icon">{entry.is_dir ? '📁' : '📄'}</span>
-                  <span className="fe-name">{entry.name}</span>
-                  <span className="fe-size">{entry.is_dir ? '' : formatSize(entry.size)}</span>
-                </li>
-              ))}
-            </ul>
+            {hostError && <div className="fe-error">{hostError}</div>}
+            {hostLoading ? (
+              <div className="fe-loading">Loading...</div>
+            ) : (
+              <ul className="fe-list">
+                {hostEntries.length === 0 && !hostError && (
+                  <li className="fe-hint">
+                    {hostPath ? 'Empty folder.' : 'Select a folder using "Browse" above.'}
+                  </li>
+                )}
+                {hostEntries.map((entry) => (
+                  <li
+                    key={entry.name}
+                    className={`fe-item ${entry.is_dir ? 'fe-dir' : ''} ${selectedHost === entry.name ? 'fe-selected' : ''}`}
+                    onClick={() => {
+                      setSelectedHost(entry.name);
+                      if (entry.is_dir) hostNavInto(entry);
+                    }}
+                    onDoubleClick={() => { if (entry.is_dir) hostNavInto(entry); }}
+                  >
+                    <span className="fe-icon">{entry.is_dir ? '📁' : '📄'}</span>
+                    <span className="fe-name">{entry.name}</span>
+                    <span className="fe-size">{entry.is_dir ? '' : formatSize(entry.size)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Device Panel */}

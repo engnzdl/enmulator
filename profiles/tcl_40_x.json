@@ -1,0 +1,19 @@
+{
+  "name": "TCL 40 X",
+  "brand": "TCL",
+  "model": "T609M",
+  "manufacturer": "TCL",
+  "device": "T609M",
+  "fingerprint": "TCL/T609M/T609M:13/TP1A.220624.014/AAP00220624:user/release-keys",
+  "dpi": 401,
+  "resolution_w": 1080,
+  "resolution_h": 2408,
+  "imei": "990782564284029",
+  "imei2": "973130155580242",
+  "meid": "97347616884255",
+  "phone_number": "+905398417807",
+  "sim_operator": "20810",
+  "sim_operator_name": "SFR",
+  "sim_country": "fr",
+  "sim_serial": "8900169589831500053"
+}
