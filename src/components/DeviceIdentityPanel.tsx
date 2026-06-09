@@ -24,6 +24,7 @@ interface FingerprintProfile {
 interface Props {
   device_id: string;
   device_status: string;
+  current_profile?: string;
 }
 
 // Luhn algorithm — generates a valid 15-digit IMEI
@@ -48,7 +49,7 @@ function generateIMEI(): string {
 
 type ApplyState = 'idle' | 'loading' | 'done' | 'error';
 
-export default function DeviceIdentityPanel({ device_id, device_status }: Props) {
+export default function DeviceIdentityPanel({ device_id, device_status, current_profile }: Props) {
   const [profiles, setProfiles] = useState<FingerprintProfile[]>([]);
   const [mode, setMode] = useState<'preset' | 'custom'>('preset');
 
@@ -69,8 +70,18 @@ export default function DeviceIdentityPanel({ device_id, device_status }: Props)
   const [applyMsg, setApplyMsg] = useState('');
 
   useEffect(() => {
-    invoke<FingerprintProfile[]>('list_profiles').then(setProfiles).catch(() => {});
-  }, []);
+    invoke<FingerprintProfile[]>('list_profiles').then(p => {
+      setProfiles(p);
+      // Auto-select the device's current profile if set
+      if (current_profile) {
+        const match = p.find(fp => fp.name === current_profile);
+        if (match) {
+          setSelectedBrand(match.brand);
+          setSelectedProfileName(match.name);
+        }
+      }
+    }).catch(() => {});
+  }, [current_profile]);
 
   // Unique brands from profiles
   const brands = useMemo(() => {

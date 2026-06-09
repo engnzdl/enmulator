@@ -144,6 +144,15 @@ export default function QuickActions({
           <span className="qa-btn-icon">🧲</span> Magisk Root
         </button>
 
+        {/* Install Magisk App */}
+        <button
+          className={btnClass('magisk_apk')}
+          onClick={() => act('magisk_apk', 'install_magisk_apk')}
+          title="Install Magisk Manager APK on the running device (after Magisk Root)"
+        >
+          <span className="qa-btn-icon">📦</span> Install Magisk App
+        </button>
+
         {/* Emulator Detection Bypass */}
         <button
           className={btnClass('bypass')}

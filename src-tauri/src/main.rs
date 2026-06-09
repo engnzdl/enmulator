@@ -841,11 +841,20 @@ fn root_with_magisk(
     let ini_content = std::fs::read_to_string(&config_ini)
         .map_err(|e| format!("Cannot read config.ini: {}", e))?;
 
+    // config.ini uses either "key=value" or "key = value" format
     let image_sysdir = ini_content.lines()
-        .find(|l| l.starts_with("image.sysdir.1="))
-        .and_then(|l| l.strip_prefix("image.sysdir.1="))
+        .find(|l| {
+            let t = l.trim();
+            t.starts_with("image.sysdir.1")
+                && t[14..].trim_start().starts_with('=')
+        })
+        .and_then(|l| l.splitn(2, '=').nth(1))
         .map(|v| v.trim().to_string())
-        .ok_or("Cannot find system image path in config.ini")?;
+        .ok_or_else(|| format!(
+            "Cannot find image.sysdir.1 in config.ini.\nPath: {}\nContent preview: {}",
+            config_ini.display(),
+            ini_content.lines().take(10).collect::<Vec<_>>().join(" | ")
+        ))?;
 
     let ramdisk = sdk_path.join(&image_sysdir).join("ramdisk.img");
     if !ramdisk.exists() {
@@ -881,14 +890,17 @@ fn root_with_magisk(
             candidates.iter().map(|p| format!("  {}", p.display())).collect::<Vec<_>>().join("\n")
         ))?;
 
-    let rootavd_dir = rootavd.parent().unwrap_or(std::path::Path::new("."));
+    // Canonicalize to absolute path — relative paths break when current_dir is set
+    let rootavd_abs = std::fs::canonicalize(rootavd)
+        .unwrap_or_else(|_| rootavd.clone());
+    let rootavd_dir = rootavd_abs.parent().unwrap_or(std::path::Path::new("."));
     let ramdisk_str = ramdisk.to_str().unwrap_or_default();
 
     // rootAVD directly patches ramdisk.img in place with Magisk.
     // The system image is shared — rooting once affects all AVDs using the same image.
     #[cfg(target_os = "windows")]
     let output = std::process::Command::new("cmd")
-        .args(["/c", rootavd.to_str().unwrap_or_default()])
+        .args(["/c", rootavd_abs.to_str().unwrap_or_default()])
         .arg(ramdisk_str)
         .current_dir(rootavd_dir)
         .output()
@@ -896,7 +908,7 @@ fn root_with_magisk(
 
     #[cfg(not(target_os = "windows"))]
     let output = std::process::Command::new("bash")
-        .arg(rootavd)
+        .arg(&rootavd_abs)
         .arg(ramdisk_str)
         .current_dir(rootavd_dir)
         .output()
@@ -907,12 +919,12 @@ fn root_with_magisk(
 
     if output.status.success() || stdout.contains("Magisk") || stdout.contains("patched") {
         Ok(format!(
-            "Magisk installed into ramdisk.img\n\n\
+            "Magisk patched into ramdisk.img ✓\n\n\
             Next steps:\n\
             1. Start this device\n\
-            2. Open the Magisk app → tap Install → Direct Install\n\
-            3. Reboot — device will have full root with su binary\n\n\
-            ⚠️  Note: This system image is shared. Rooting affects all devices using the same image.\n\n\
+            2. Click 'Install Magisk App' in Quick Actions to install the Magisk Manager\n\
+            3. Root is already active — apps can request su\n\n\
+            ⚠️  This system image is shared. All devices using the same image are affected.\n\n\
             Image: {}",
             ramdisk.display()
         ))
@@ -922,6 +934,53 @@ fn root_with_magisk(
             output.status.code(), stdout, stderr
         ))
     }
+}
+
+// ── Install Magisk Manager APK ──
+
+#[tauri::command]
+fn install_magisk_apk(
+    config: tauri::State<Arc<Mutex<Config>>>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+) -> Result<String, String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    if dev.status != "running" {
+        return Err("Device must be running to install Magisk app".into());
+    }
+    let sdk_path = PathBuf::from(
+        config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?
+    );
+
+    // Find bundled Magisk.zip
+    let res_dir = paths::resource_dir();
+    let exe_dir = std::env::current_exe()
+        .unwrap_or_default()
+        .parent()
+        .unwrap_or(std::path::Path::new("."))
+        .to_path_buf();
+
+    let zip_candidates = [
+        PathBuf::from("../src-tauri/rootAVD/Magisk.zip"),
+        PathBuf::from("src-tauri/rootAVD/Magisk.zip"),
+        exe_dir.join("rootAVD/Magisk.zip"),
+    ];
+    let mut zip_candidates = zip_candidates.to_vec();
+    if let Some(ref rd) = res_dir {
+        zip_candidates.push(rd.join("rootAVD/Magisk.zip"));
+    }
+    let magisk_zip = zip_candidates.iter().find(|p| p.exists())
+        .ok_or("Magisk.zip not found")?;
+
+    // Magisk.zip is itself an APK (APKs are ZIP files) — install it directly
+    let tmp_apk = std::env::temp_dir().join("Magisk.apk");
+    std::fs::copy(magisk_zip, &tmp_apk).map_err(|e| format!("Failed to copy Magisk: {}", e))?;
+
+    let serial = format!("emulator-{}", dev.port);
+    let result = adb_bridge::install_apk(&sdk_path, &serial, &tmp_apk.to_string_lossy())?;
+    let _ = std::fs::remove_file(&tmp_apk);
+
+    Ok(format!("Magisk Manager installed ✓\n{}", result.trim()))
 }
 
 // ── Device Templates ──
@@ -1194,6 +1253,7 @@ fn main() {
             toggle_root,
             toggle_writable_system,
             root_with_magisk,
+            install_magisk_apk,
             bypass_detection,
             install_cert,
             list_host_files,
