@@ -1,0 +1,19 @@
+{
+  "name": "Motorola G54 5G",
+  "brand": "motorola",
+  "model": "XT2343-2",
+  "manufacturer": "motorola",
+  "device": "cancunf",
+  "fingerprint": "motorola/cancunf_g/cancunf:13/TKQS33.68-64-3/1:user/release-keys",
+  "dpi": 409,
+  "resolution_w": 1080,
+  "resolution_h": 2400,
+  "imei": "558580725581406",
+  "imei2": "005178404829391",
+  "meid": "73300746838093",
+  "phone_number": "+905810236938",
+  "sim_operator": "31026",
+  "sim_operator_name": "T-Mobile US",
+  "sim_country": "us",
+  "sim_serial": "8903817513485646447"
+}

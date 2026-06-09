@@ -1,0 +1,19 @@
+{
+  "name": "OPPO Reno10 Pro+",
+  "brand": "OPPO",
+  "model": "CPH2525",
+  "manufacturer": "OPPO",
+  "device": "OP5665L1",
+  "fingerprint": "OPPO/CPH2525/OP5665L1:13/SKQ1.221012.001/V13.1.0.485:user/release-keys",
+  "dpi": 450,
+  "resolution_w": 1080,
+  "resolution_h": 2412,
+  "imei": "709048789658278",
+  "imei2": "452276668565483",
+  "meid": "09808528167779",
+  "phone_number": "+905362079471",
+  "sim_operator": "28603",
+  "sim_operator_name": "Türk Telekom",
+  "sim_country": "tr",
+  "sim_serial": "8909583197849337312"
+}

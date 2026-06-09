@@ -1,0 +1,19 @@
+{
+  "name": "HONOR Magic6 Pro",
+  "brand": "HONOR",
+  "model": "BVL-AN16",
+  "manufacturer": "HONOR",
+  "device": "BVLA",
+  "fingerprint": "HONOR/BVL-AN16/BVLA:14/HONORBVL-AN16/4.0.0.162C00:user/release-keys",
+  "dpi": 460,
+  "resolution_w": 1260,
+  "resolution_h": 2800,
+  "imei": "102381016835309",
+  "imei2": "393427916299365",
+  "meid": "45307842571869",
+  "phone_number": "+905703989163",
+  "sim_operator": "28603",
+  "sim_operator_name": "Türk Telekom",
+  "sim_country": "tr",
+  "sim_serial": "8908350346319097173"
+}

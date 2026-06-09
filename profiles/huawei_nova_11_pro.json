@@ -1,0 +1,19 @@
+{
+  "name": "Huawei nova 11 Pro",
+  "brand": "HUAWEI",
+  "model": "GOA-AL80",
+  "manufacturer": "HUAWEI",
+  "device": "GOAA",
+  "fingerprint": "HUAWEI/GOA-AL80/GOAA:12/HUAWEIGOA-AL80/GOA-AL80C00B131:user/release-keys",
+  "dpi": 394,
+  "resolution_w": 1080,
+  "resolution_h": 2412,
+  "imei": "058024429500961",
+  "imei2": "733141500225111",
+  "meid": "11881568563041",
+  "phone_number": "+905034858379",
+  "sim_operator": "31026",
+  "sim_operator_name": "T-Mobile US",
+  "sim_country": "us",
+  "sim_serial": "8906923966939081212"
+}

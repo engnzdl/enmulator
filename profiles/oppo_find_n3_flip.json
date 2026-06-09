@@ -1,0 +1,19 @@
+{
+  "name": "OPPO Find N3 Flip",
+  "brand": "OPPO",
+  "model": "CPH2519",
+  "manufacturer": "OPPO",
+  "device": "OP5746L1",
+  "fingerprint": "OPPO/CPH2519/OP5746L1:13/SKQ1.221012.001/V13.1.0.485(P2):user/release-keys",
+  "dpi": 425,
+  "resolution_w": 1080,
+  "resolution_h": 2520,
+  "imei": "449432020546036",
+  "imei2": "969000773888465",
+  "meid": "36739420100129",
+  "phone_number": "+905990130717",
+  "sim_operator": "28601",
+  "sim_operator_name": "Turkcell",
+  "sim_country": "tr",
+  "sim_serial": "8905990356461019904"
+}

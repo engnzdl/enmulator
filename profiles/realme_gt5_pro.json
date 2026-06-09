@@ -1,0 +1,19 @@
+{
+  "name": "realme GT5 Pro",
+  "brand": "realme",
+  "model": "RMX3888",
+  "manufacturer": "realme",
+  "device": "RMX3888",
+  "fingerprint": "realme/RMX3888/RMX3888:14/UP1A.231005.007/S.V10_20240110:user/release-keys",
+  "dpi": 450,
+  "resolution_w": 1264,
+  "resolution_h": 2780,
+  "imei": "781742159624883",
+  "imei2": "173649244105842",
+  "meid": "37816932121639",
+  "phone_number": "+905392957012",
+  "sim_operator": "31026",
+  "sim_operator_name": "T-Mobile US",
+  "sim_country": "us",
+  "sim_serial": "8902445262100559055"
+}

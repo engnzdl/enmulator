@@ -1,0 +1,19 @@
+{
+  "name": "HONOR X9b",
+  "brand": "HONOR",
+  "model": "ALI-NX1",
+  "manufacturer": "HONOR",
+  "device": "ALING",
+  "fingerprint": "HONOR/ALI-NX1/ALING:14/HONORALI-NX1/3.0.0.360:user/release-keys",
+  "dpi": 394,
+  "resolution_w": 1080,
+  "resolution_h": 2392,
+  "imei": "596052285580180",
+  "imei2": "827799907670010",
+  "meid": "74537907375456",
+  "phone_number": "+905771803386",
+  "sim_operator": "28602",
+  "sim_operator_name": "Vodafone TR",
+  "sim_country": "tr",
+  "sim_serial": "8904444645776454394"
+}

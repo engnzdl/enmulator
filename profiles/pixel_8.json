@@ -1,0 +1,19 @@
+{
+  "name": "Pixel 8",
+  "brand": "google",
+  "model": "Pixel 8",
+  "manufacturer": "Google",
+  "device": "shiba",
+  "fingerprint": "google/shiba/shiba:15/AP4A.241205.013/12768715:user/release-keys",
+  "dpi": 428,
+  "resolution_w": 1080,
+  "resolution_h": 2400,
+  "imei": "136246259257398",
+  "imei2": "337168853707627",
+  "meid": "16903022149544",
+  "phone_number": "+905523742846",
+  "sim_operator": "23430",
+  "sim_operator_name": "EE",
+  "sim_country": "gb",
+  "sim_serial": "8903609662519772216"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Samsung Galaxy Z Flip5",
+  "brand": "samsung",
+  "model": "SM-F731B",
+  "manufacturer": "samsung",
+  "device": "b4q",
+  "fingerprint": "samsung/b4qxxx/b4q:14/UP1A.231005.007/F731BXXS3BWK1:user/release-keys",
+  "dpi": 425,
+  "resolution_w": 1080,
+  "resolution_h": 2640,
+  "imei": "130048609231990",
+  "imei2": "565125806752103",
+  "meid": "72702226512486",
+  "phone_number": "+905151420010",
+  "sim_operator": "23430",
+  "sim_operator_name": "EE",
+  "sim_country": "gb",
+  "sim_serial": "8908445957116345249"
+}

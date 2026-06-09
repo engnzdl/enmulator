@@ -9,6 +9,7 @@ export interface Device {
   status: string;
   port: number;
   root_enabled: boolean;
+  writable_system: boolean;
 }
 
 interface Props {

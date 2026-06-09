@@ -16,7 +16,8 @@ pub fn shell(sdk_path: &PathBuf, serial: &str, cmd: &str) -> Result<String, Stri
 }
 
 pub fn setprop(sdk_path: &PathBuf, serial: &str, key: &str, value: &str) -> Result<(), String> {
-    shell(sdk_path, serial, &format!("setprop {} {}", key, value)).map(|_| ())
+    let escaped = value.replace('\'', "'\\''");
+    shell(sdk_path, serial, &format!("setprop {} '{}'", key, escaped)).map(|_| ())
 }
 
 pub fn install_apk(sdk_path: &PathBuf, serial: &str, apk_path: &str) -> Result<String, String> {
@@ -34,11 +35,15 @@ pub fn install_apk(sdk_path: &PathBuf, serial: &str, apk_path: &str) -> Result<S
 
 pub fn push(sdk_path: &PathBuf, serial: &str, local: &str, remote: &str) -> Result<(), String> {
     let adb = sdk::get_adb_path(sdk_path);
-    Command::new(&adb)
+    let output = Command::new(&adb)
         .args(["-s", serial, "push", local, remote])
         .output()
         .map_err(|e| format!("ADB error: {}", e))?;
-    Ok(())
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).to_string())
+    }
 }
 
 pub fn pull(sdk_path: &PathBuf, serial: &str, remote: &str, local: &str) -> Result<(), String> {

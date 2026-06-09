@@ -1,0 +1,19 @@
+{
+  "name": "Xiaomi 13 Ultra",
+  "brand": "Xiaomi",
+  "model": "2304FPN6DG",
+  "manufacturer": "Xiaomi",
+  "device": "ishtar",
+  "fingerprint": "Xiaomi/ishtar_global/ishtar:13/TKQ1.221114.001/V14.0.6.0.TMACNXM:user/release-keys",
+  "dpi": 521,
+  "resolution_w": 1440,
+  "resolution_h": 3200,
+  "imei": "831659787037330",
+  "imei2": "172355366896314",
+  "meid": "01004523924242",
+  "phone_number": "+905475283741",
+  "sim_operator": "26201",
+  "sim_operator_name": "Telekom DE",
+  "sim_country": "de",
+  "sim_serial": "8906319173140334253"
+}

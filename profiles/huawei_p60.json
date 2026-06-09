@@ -1,0 +1,19 @@
+{
+  "name": "Huawei P60",
+  "brand": "HUAWEI",
+  "model": "LNA-AL00",
+  "manufacturer": "HUAWEI",
+  "device": "LNAA",
+  "fingerprint": "HUAWEI/LNA-AL00/LNAA:13/HUAWEILNA-AL00/104.0.0.172(C00E172R6P1):user/release-keys",
+  "dpi": 440,
+  "resolution_w": 1220,
+  "resolution_h": 2700,
+  "imei": "003066307915452",
+  "imei2": "938907863455526",
+  "meid": "91854959681823",
+  "phone_number": "+905469708097",
+  "sim_operator": "28603",
+  "sim_operator_name": "Türk Telekom",
+  "sim_country": "tr",
+  "sim_serial": "8907891957350741568"
+}

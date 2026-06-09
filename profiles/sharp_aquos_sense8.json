@@ -1,0 +1,19 @@
+{
+  "name": "SHARP AQUOS sense8",
+  "brand": "SHARP",
+  "model": "SH-M26",
+  "manufacturer": "SHARP",
+  "device": "SH-M26",
+  "fingerprint": "sharp/SH-M26/SH-M26:13/53.0.B.1.109/01.00.00:user/release-keys",
+  "dpi": 429,
+  "resolution_w": 1080,
+  "resolution_h": 2340,
+  "imei": "134431828690483",
+  "imei2": "873348008166362",
+  "meid": "82848913877890",
+  "phone_number": "+905964454869",
+  "sim_operator": "20810",
+  "sim_operator_name": "SFR",
+  "sim_country": "fr",
+  "sim_serial": "8909512415491157720"
+}

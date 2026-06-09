@@ -1,0 +1,19 @@
+{
+  "name": "Xiaomi 14 Pro",
+  "brand": "Xiaomi",
+  "model": "23116PN5BG",
+  "manufacturer": "Xiaomi",
+  "device": "shennong",
+  "fingerprint": "Xiaomi/shennong_global/shennong:14/UKQ1.231003.002/V816.0.1.0.UNACNXM:user/release-keys",
+  "dpi": 522,
+  "resolution_w": 1440,
+  "resolution_h": 3200,
+  "imei": "335273305942954",
+  "imei2": "084009955382403",
+  "meid": "04475504495552",
+  "phone_number": "+905186309090",
+  "sim_operator": "28601",
+  "sim_operator_name": "Turkcell",
+  "sim_country": "tr",
+  "sim_serial": "8909007015960833117"
+}

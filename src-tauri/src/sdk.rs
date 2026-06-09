@@ -113,14 +113,6 @@ pub fn check_sdk_tools(sdk: &PathBuf) -> Result<(), String> {
     Ok(())
 }
 
-pub fn get_ramdisk_path(sdk: &PathBuf, api_level: u8, tag: &str, abi: &str) -> PathBuf {
-    sdk.join("system-images")
-        .join(format!("android-{}", api_level))
-        .join(tag)
-        .join(abi)
-        .join("ramdisk.img")
-}
-
 /// Calls `sdkmanager --list` and parses available system images.
 /// Returns Vec<SystemImage> with api_level, abi, tag, and description.
 pub fn list_available_images(sdk_path: &PathBuf) -> Result<Vec<SystemImage>, String> {

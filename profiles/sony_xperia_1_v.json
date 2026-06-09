@@ -1,0 +1,19 @@
+{
+  "name": "Sony Xperia 1 V",
+  "brand": "Sony",
+  "model": "XQ-DQ54",
+  "manufacturer": "Sony",
+  "device": "pdx234",
+  "fingerprint": "Sony/pdx234_eea/pdx234:13/62.1.A.2.31/077/R14R:user/release-keys",
+  "dpi": 643,
+  "resolution_w": 1644,
+  "resolution_h": 3840,
+  "imei": "643222416507641",
+  "imei2": "791451009790021",
+  "meid": "16435937890669",
+  "phone_number": "+905106034245",
+  "sim_operator": "23430",
+  "sim_operator_name": "EE",
+  "sim_country": "gb",
+  "sim_serial": "8905732119160756305"
+}

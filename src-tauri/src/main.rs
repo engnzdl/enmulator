@@ -36,8 +36,8 @@ struct FileEntry {
 
 // ── SDK ──
 #[tauri::command]
-fn detect_sdk_cmd(config: tauri::State<Config>) -> Result<String, String> {
-    if let Some(ref path) = config.sdk_path {
+fn detect_sdk_cmd(config: tauri::State<Arc<Mutex<Config>>>) -> Result<String, String> {
+    if let Some(ref path) = config.lock().unwrap().sdk_path {
         return Ok(path.clone());
     }
     sdk::detect_sdk()
@@ -46,18 +46,18 @@ fn detect_sdk_cmd(config: tauri::State<Config>) -> Result<String, String> {
 }
 
 #[tauri::command]
-fn list_available_images_cmd(config: tauri::State<Config>) -> Result<Vec<SystemImage>, String> {
+fn list_available_images_cmd(config: tauri::State<Arc<Mutex<Config>>>) -> Result<Vec<SystemImage>, String> {
     let sdk_path = PathBuf::from(
-        config.sdk_path.as_ref().ok_or("SDK not configured")?
+        config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?
     );
     sdk::check_sdk_tools(&sdk_path)?;
     sdk::list_available_images(&sdk_path)
 }
 
 #[tauri::command]
-fn install_system_image_cmd(app: tauri::AppHandle, config: tauri::State<Config>, package: String) -> Result<(), String> {
+fn install_system_image_cmd(app: tauri::AppHandle, config: tauri::State<Arc<Mutex<Config>>>, package: String) -> Result<(), String> {
     let sdk_path = PathBuf::from(
-        config.sdk_path.as_ref().ok_or("SDK not configured")?
+        config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?
     );
     sdk::check_sdk_tools(&sdk_path)?;
     sdk::install_system_image(&app, &sdk_path, &package)
@@ -72,7 +72,7 @@ fn list_devices(store: tauri::State<Arc<DeviceStore>>) -> Vec<Device> {
 #[tauri::command]
 fn create_device(
     store: tauri::State<Arc<DeviceStore>>,
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     name: String,
     api_level: u8,
     abi: String,
@@ -80,7 +80,7 @@ fn create_device(
     fingerprint_profile: Option<String>,
 ) -> Result<Device, String> {
     let sdk_path = PathBuf::from(
-        config.sdk_path.as_ref().ok_or("SDK not configured")?
+        config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?
     );
     sdk::check_sdk_tools(&sdk_path)?;
 
@@ -96,8 +96,17 @@ fn create_device(
         (None, None, None)
     };
 
+    let device_id = avd_manager::sanitize_id(&name);
+    if device_id.is_empty() {
+        return Err("Device name must contain at least one alphanumeric character".into());
+    }
+    // Reject if ID already taken
+    if store.get(&device_id).is_some() {
+        return Err(format!("A device with the name '{}' already exists", name));
+    }
+
     let dev = avd_manager::create_avd(
-        &sdk_path, &name, &name, api_level, &abi, &tag,
+        &sdk_path, &device_id, &name, api_level, &abi, &tag,
         fingerprint_profile, res_w, res_h, dpi,
         &store.devices_dir,
     )?;
@@ -106,7 +115,23 @@ fn create_device(
 }
 
 #[tauri::command]
-fn delete_device(store: tauri::State<Arc<DeviceStore>>, id: String) -> Result<(), String> {
+fn delete_device(
+    config: tauri::State<Arc<Mutex<Config>>>,
+    store: tauri::State<Arc<DeviceStore>>,
+    emu_store: tauri::State<Arc<EmulatorStore>>,
+    id: String,
+) -> Result<(), String> {
+    if let Some(dev) = store.get(&id) {
+        if let Some(sdk_str) = config.lock().unwrap().sdk_path.clone() {
+            let sdk_path = PathBuf::from(&sdk_str);
+            // Stop emulator if still running
+            if dev.status == "running" {
+                emu_store.stop(&sdk_path, &dev.avd_name, dev.port);
+            }
+            // Unregister from avdmanager to avoid orphaned .ini files
+            let _ = avd_manager::delete_avd(&sdk_path, &dev.avd_name);
+        }
+    }
     store.remove(&id);
     Ok(())
 }
@@ -118,7 +143,13 @@ fn clone_device(
     target_name: String,
 ) -> Result<Device, String> {
     let source = store.get(&source_id).ok_or("Source not found")?;
-    let target_id = target_name.to_lowercase().replace(' ', "_");
+    let target_id = avd_manager::sanitize_id(&target_name);
+    if target_id.is_empty() {
+        return Err("Target name must contain at least one alphanumeric character".into());
+    }
+    if store.get(&target_id).is_some() {
+        return Err(format!("A device named '{}' already exists", target_name));
+    }
     let src_dir = store.devices_dir.join(&source_id);
     let dst_dir = store.devices_dir.join(&target_id);
 
@@ -141,17 +172,22 @@ fn clone_device(
     }
     copy_dir(&src_dir, &dst_dir)?;
 
+    let new_avd_name = format!("enmulator_{}", target_id);
+    // Register the cloned AVD with avdmanager so the emulator can find it by name
+    avd_manager::register_avd_at_path(&new_avd_name, &dst_dir)?;
+
     let cloned = Device {
         id: target_id.clone(),
         display_name: target_name,
-        avd_name: format!("enmulator_{}", target_id),
+        avd_name: new_avd_name,
         profile: source.profile.clone(),
         fingerprint_profile: source.fingerprint_profile.clone(),
         api_level: source.api_level,
         status: "stopped".to_string(),
         port: 0,
-        root_enabled: source.root_enabled,
+        root_enabled: false,
         adb_enabled: source.adb_enabled,
+        writable_system: false,
         created_at: chrono::Utc::now().to_rfc3339(),
     };
     store.insert(cloned.clone());
@@ -161,14 +197,18 @@ fn clone_device(
 // ── Emulator lifecycle ──
 #[tauri::command]
 fn start_device(
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     emu_store: tauri::State<Arc<EmulatorStore>>,
     id: String,
     headless: bool,
 ) -> Result<u16, String> {
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     let dev = store.get(&id).ok_or("Device not found")?;
+
+    if dev.status == "running" {
+        return Err("Device is already running".into());
+    }
 
     let profile = dev.fingerprint_profile.as_ref().and_then(|name| {
         fingerprint::list_profiles(&paths::profiles_dir())
@@ -207,12 +247,12 @@ fn start_device(
 
 #[tauri::command]
 fn stop_device(
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     emu_store: tauri::State<Arc<EmulatorStore>>,
     id: String,
 ) -> Result<(), String> {
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     let dev = store.get(&id).ok_or("Device not found")?;
     emu_store.stop(&sdk_path, &dev.avd_name, dev.port);
     store.update_status(&id, "stopped");
@@ -221,36 +261,36 @@ fn stop_device(
 
 #[tauri::command]
 fn check_device_alive(
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     id: String,
 ) -> Result<bool, String> {
     let dev = store.get(&id).ok_or("Device not found")?;
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     Ok(EmulatorStore::is_alive(&sdk_path, dev.port))
 }
 
 // ── ADB ──
 #[tauri::command]
-fn adb_shell(config: tauri::State<Config>, store: tauri::State<Arc<DeviceStore>>, id: String, cmd: String) -> Result<String, String> {
+fn adb_shell(config: tauri::State<Arc<Mutex<Config>>>, store: tauri::State<Arc<DeviceStore>>, id: String, cmd: String) -> Result<String, String> {
     let dev = store.get(&id).ok_or("Device not found")?;
     let serial = format!("emulator-{}", dev.port);
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     adb_bridge::shell(&sdk_path, &serial, &cmd)
 }
 
 #[tauri::command]
-fn install_apk(config: tauri::State<Config>, store: tauri::State<Arc<DeviceStore>>, id: String, apk_path: String) -> Result<String, String> {
+fn install_apk(config: tauri::State<Arc<Mutex<Config>>>, store: tauri::State<Arc<DeviceStore>>, id: String, apk_path: String) -> Result<String, String> {
     let dev = store.get(&id).ok_or("Device not found")?;
     let serial = format!("emulator-{}", dev.port);
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     adb_bridge::install_apk(&sdk_path, &serial, &apk_path)
 }
 
 // ── Proxy ──
 #[tauri::command]
 fn set_device_proxy(
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     proxy_store: tauri::State<Arc<ProxyStore>>,
     id: String,
@@ -263,7 +303,7 @@ fn set_device_proxy(
         return Err("Device must be running to set proxy".into());
     }
     let serial = format!("emulator-{}", dev.port);
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
 
     if enabled {
         let proxy_cmd = format!("{}:{}", host, port);
@@ -303,7 +343,7 @@ fn delete_profile(name: String) -> Result<(), String> {
 
 #[tauri::command]
 fn apply_profile(
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     device_id: String,
     profile_name: String,
@@ -314,14 +354,14 @@ fn apply_profile(
     }
     let profiles = fingerprint::list_profiles(&paths::profiles_dir());
     let profile = profiles.into_iter().find(|p| p.name == profile_name).ok_or("Profile not found")?;
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     let serial = format!("emulator-{}", dev.port);
     fingerprint::apply_to_device(&sdk_path, &serial, &profile)
 }
 
 #[tauri::command]
 fn set_device_identity(
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     device_id: String,
     imei: Option<String>,
@@ -337,7 +377,7 @@ fn set_device_identity(
     if dev.status != "running" {
         return Err("Device must be running".into());
     }
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     let serial = format!("emulator-{}", dev.port);
 
     // Restart adbd as root so setprop works for persist.radio.* / gsm.*
@@ -367,27 +407,27 @@ fn set_device_identity(
 // ── Extras: Recording, Clipboard, GPS, Logcat ──
 #[tauri::command]
 fn start_screen_record(
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     rec_store: tauri::State<Arc<RecordingStore>>,
     id: String,
 ) -> Result<(), String> {
     let dev = store.get(&id).ok_or("Device not found")?;
     let serial = format!("emulator-{}", dev.port);
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     extras::start_recording(&sdk_path, &serial, &id, &rec_store)
 }
 
 #[tauri::command]
 fn stop_screen_record(
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     rec_store: tauri::State<Arc<RecordingStore>>,
     id: String,
 ) -> Result<String, String> {
     let dev = store.get(&id).ok_or("Device not found")?;
     let serial = format!("emulator-{}", dev.port);
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     let local_dir = std::env::temp_dir().join("enmulator_recordings");
     extras::stop_recording(&sdk_path, &serial, &id, &rec_store, &local_dir)
         .map(|p| p.to_string_lossy().to_string())
@@ -395,7 +435,7 @@ fn stop_screen_record(
 
 #[tauri::command]
 fn clipboard_sync(
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     id: String,
     direction: String,
@@ -403,13 +443,13 @@ fn clipboard_sync(
 ) -> Result<String, String> {
     let dev = store.get(&id).ok_or("Device not found")?;
     let serial = format!("emulator-{}", dev.port);
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     extras::sync_clipboard(&sdk_path, &serial, &direction, text.as_deref())
 }
 
 #[tauri::command]
 fn gps_set(
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     id: String,
     lat: f64,
@@ -417,20 +457,20 @@ fn gps_set(
 ) -> Result<(), String> {
     let dev = store.get(&id).ok_or("Device not found")?;
     let serial = format!("emulator-{}", dev.port);
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     extras::set_gps(&sdk_path, &serial, lat, lon)
 }
 
 #[tauri::command]
 fn logcat_start(
     app: tauri::AppHandle,
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     id: String,
 ) -> Result<(), String> {
     let dev = store.get(&id).ok_or("Device not found")?;
     let serial = format!("emulator-{}", dev.port);
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     extras::stream_logcat(&sdk_path, &serial, app).map(|_| ())
 }
 
@@ -453,11 +493,12 @@ fn stop_api_server() -> Result<String, String> {
 // ── File Explorer ──
 
 #[tauri::command]
-fn list_files(config: tauri::State<Config>, store: tauri::State<Arc<DeviceStore>>, id: String, path: String) -> Result<Vec<FileEntry>, String> {
+fn list_files(config: tauri::State<Arc<Mutex<Config>>>, store: tauri::State<Arc<DeviceStore>>, id: String, path: String) -> Result<Vec<FileEntry>, String> {
     let dev = store.get(&id).ok_or("Device not found")?;
     let serial = format!("emulator-{}", dev.port);
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
-    let output = adb_bridge::shell(&sdk_path, &serial, &format!("ls -la {}", path))?;
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
+    let quoted_path = path.replace('\'', "'\\''");
+    let output = adb_bridge::shell(&sdk_path, &serial, &format!("ls -la '{}'", quoted_path))?;
     let mut entries = Vec::new();
     for line in output.lines() {
         // Skip "total" line
@@ -480,27 +521,85 @@ fn list_files(config: tauri::State<Config>, store: tauri::State<Arc<DeviceStore>
         // Size is the 5th column (0-indexed: 4)
         let size: u64 = parts[4].parse().unwrap_or(0);
         // Name starts at column 8, but may contain spaces if it's the last field
-        // Reconstruct name from columns 8+
-        let name = parts[8..].join(" ");
+        // Reconstruct name from columns 8+ (may contain spaces)
+        let name_raw = parts[8..].join(" ");
+        // Strip symlink target: "name -> /path/to/target" → "name"
+        let name = match name_raw.find(" -> ") {
+            Some(idx) => name_raw[..idx].to_string(),
+            None => name_raw,
+        };
         entries.push(FileEntry { name, is_dir, size, permissions: perms });
     }
     Ok(entries)
 }
 
 #[tauri::command]
-fn pull_file(config: tauri::State<Config>, store: tauri::State<Arc<DeviceStore>>, id: String, remote_path: String, local_path: String) -> Result<(), String> {
+fn pull_file(config: tauri::State<Arc<Mutex<Config>>>, store: tauri::State<Arc<DeviceStore>>, id: String, remote_path: String, local_path: String) -> Result<(), String> {
     let dev = store.get(&id).ok_or("Device not found")?;
     let serial = format!("emulator-{}", dev.port);
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     adb_bridge::pull(&sdk_path, &serial, &remote_path, &local_path)
 }
 
 #[tauri::command]
-fn push_file(config: tauri::State<Config>, store: tauri::State<Arc<DeviceStore>>, id: String, local_path: String, remote_path: String) -> Result<(), String> {
+fn push_file(config: tauri::State<Arc<Mutex<Config>>>, store: tauri::State<Arc<DeviceStore>>, id: String, local_path: String, remote_path: String) -> Result<(), String> {
     let dev = store.get(&id).ok_or("Device not found")?;
     let serial = format!("emulator-{}", dev.port);
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     adb_bridge::push(&sdk_path, &serial, &local_path, &remote_path)
+}
+
+// ── Host File Explorer ──
+
+#[tauri::command]
+fn list_host_files(path: String) -> Result<Vec<FileEntry>, String> {
+    let dir_path = std::path::Path::new(&path);
+    if !dir_path.exists() {
+        return Err(format!("Path does not exist: {}", path));
+    }
+    if !dir_path.is_dir() {
+        return Err(format!("Not a directory: {}", path));
+    }
+    let mut entries = Vec::new();
+    for entry in std::fs::read_dir(dir_path).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let meta = match entry.metadata() {
+            Ok(m) => m,
+            Err(_) => continue,
+        };
+        let permissions = {
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let mode = meta.permissions().mode() & 0o777;
+                format!("{}{}{}{}{}{}{}{}{}{}",
+                    if meta.is_dir() { 'd' } else { '-' },
+                    if mode & 0o400 != 0 { 'r' } else { '-' },
+                    if mode & 0o200 != 0 { 'w' } else { '-' },
+                    if mode & 0o100 != 0 { 'x' } else { '-' },
+                    if mode & 0o040 != 0 { 'r' } else { '-' },
+                    if mode & 0o020 != 0 { 'w' } else { '-' },
+                    if mode & 0o010 != 0 { 'x' } else { '-' },
+                    if mode & 0o004 != 0 { 'r' } else { '-' },
+                    if mode & 0o002 != 0 { 'w' } else { '-' },
+                    if mode & 0o001 != 0 { 'x' } else { '-' },
+                )
+            }
+            #[cfg(not(unix))]
+            {
+                if meta.is_dir() { "drwxr-xr-x".to_string() } else { "-rw-r--r--".to_string() }
+            }
+        };
+        entries.push(FileEntry {
+            name: entry.file_name().to_string_lossy().to_string(),
+            is_dir: meta.is_dir(),
+            size: meta.len(),
+            permissions,
+        });
+    }
+    // Directories first, then alphabetical
+    entries.sort_by(|a, b| b.is_dir.cmp(&a.is_dir).then_with(|| a.name.cmp(&b.name)));
+    Ok(entries)
 }
 
 // ── Batch operations ──
@@ -519,12 +618,12 @@ struct BatchFailure {
 
 #[tauri::command]
 async fn batch_start(
-    config: tauri::State<'_, Config>,
+    config: tauri::State<'_, Arc<Mutex<Config>>>,
     store: tauri::State<'_, Arc<DeviceStore>>,
     emu_store: tauri::State<'_, Arc<EmulatorStore>>,
     ids: Vec<String>,
 ) -> Result<BatchResult, String> {
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     let mut result = BatchResult { success: vec![], failed: vec![] };
 
     for id in &ids {
@@ -555,12 +654,12 @@ async fn batch_start(
 
 #[tauri::command]
 async fn batch_stop(
-    config: tauri::State<'_, Config>,
+    config: tauri::State<'_, Arc<Mutex<Config>>>,
     store: tauri::State<'_, Arc<DeviceStore>>,
     emu_store: tauri::State<'_, Arc<EmulatorStore>>,
     ids: Vec<String>,
 ) -> Result<BatchResult, String> {
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     let mut result = BatchResult { success: vec![], failed: vec![] };
 
     for id in &ids {
@@ -584,20 +683,20 @@ async fn batch_stop(
 
 #[tauri::command]
 async fn batch_delete(
-    config: tauri::State<'_, Config>,
+    config: tauri::State<'_, Arc<Mutex<Config>>>,
     store: tauri::State<'_, Arc<DeviceStore>>,
     emu_store: tauri::State<'_, Arc<EmulatorStore>>,
     ids: Vec<String>,
 ) -> Result<BatchResult, String> {
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     let mut result = BatchResult { success: vec![], failed: vec![] };
 
     for id in &ids {
-        // Stop if running
         if let Some(dev) = store.get(id) {
             if dev.status == "running" {
                 emu_store.stop(&sdk_path, &dev.avd_name, dev.port);
             }
+            let _ = avd_manager::delete_avd(&sdk_path, &dev.avd_name);
         }
         store.remove(id);
         result.success.push(id.clone());
@@ -609,7 +708,7 @@ async fn batch_delete(
 
 #[tauri::command]
 fn toggle_root(
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     id: String,
 ) -> Result<String, String> {
@@ -617,7 +716,7 @@ fn toggle_root(
     if dev.status != "running" {
         return Err("Device must be running to toggle root".into());
     }
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     let serial = format!("emulator-{}", dev.port);
     
     if dev.root_enabled {
@@ -635,21 +734,201 @@ fn toggle_root(
             .map_err(|e| format!("ADB error: {}", e))?;
         
         let out = String::from_utf8_lossy(&output.stdout);
+        let err = String::from_utf8_lossy(&output.stderr);
+        let combined = format!("{}{}", out, err).to_lowercase();
+
         if out.contains("already running as root") || output.status.success() {
             store.set_root(&id, true);
-            Ok("Root enabled".to_string())
+            Ok("Root enabled (adb root — ADB daemon runs as root)".to_string())
+        } else if combined.contains("cannot run as root") || combined.contains("production build") || combined.contains("not allowed") {
+            Err(
+                "adb root is not supported on this system image.\n\n\
+                ✓ Use a 'google_apis' (non-Play Store) system image for adb root.\n\
+                ✓ For Play Store images, use 'Magisk Root' instead (device must be stopped first)."
+                .to_string()
+            )
         } else {
-            let err = String::from_utf8_lossy(&output.stderr);
-            Err(format!("adb root failed: {}. Use a Google APIs system image.", err))
+            Err(format!(
+                "adb root failed.\n\nOutput: {}\n\nTip: Use a 'google_apis' (non-Play Store) system image.",
+                combined.trim()
+            ))
         }
+    }
+}
+
+// ── System Disk Mode ──
+
+#[tauri::command]
+fn toggle_writable_system(
+    config: tauri::State<Arc<Mutex<Config>>>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+) -> Result<String, String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    if dev.status != "running" {
+        return Err("Device must be running to change system disk mode".into());
+    }
+    let sdk_path = PathBuf::from(
+        config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?
+    );
+    let serial = format!("emulator-{}", dev.port);
+    let adb = sdk::get_adb_path(&sdk_path);
+
+    if dev.writable_system {
+        // Switch back to read-only
+        let _ = std::process::Command::new(&adb)
+            .args(["-s", &serial, "shell", "mount", "-o", "remount,ro", "/system"])
+            .output();
+        store.set_writable_system(&id, false);
+        Ok("System disk set to read-only".to_string())
+    } else {
+        // Ensure adb is running as root first
+        let root_out = std::process::Command::new(&adb)
+            .args(["-s", &serial, "root"])
+            .output()
+            .map_err(|e| format!("adb root error: {}", e))?;
+
+        let root_stdout = String::from_utf8_lossy(&root_out.stdout);
+        if !root_out.status.success()
+            && !root_stdout.contains("already running as root")
+            && !root_stdout.contains("restarting adbd as root")
+        {
+            return Err(
+                "Root required for writable system. Use a google_apis (non-Play Store) system image and enable root first.".to_string()
+            );
+        }
+
+        // Wait briefly for adbd to restart as root
+        std::thread::sleep(std::time::Duration::from_millis(800));
+
+        let remount_out = std::process::Command::new(&adb)
+            .args(["-s", &serial, "remount"])
+            .output()
+            .map_err(|e| format!("adb remount error: {}", e))?;
+
+        if !remount_out.status.success() {
+            let stderr = String::from_utf8_lossy(&remount_out.stderr);
+            return Err(format!("adb remount failed: {}", stderr));
+        }
+        store.set_writable_system(&id, true);
+        store.set_root(&id, true);
+        Ok("System disk set to writable (changes are runtime only — reboot resets)".to_string())
+    }
+}
+
+// ── rootAVD (Magisk) integration ──
+
+#[tauri::command]
+fn root_with_magisk(
+    config: tauri::State<Arc<Mutex<Config>>>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+) -> Result<String, String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    if dev.status == "running" {
+        return Err("Stop the device before rooting with Magisk".into());
+    }
+    let sdk_path = PathBuf::from(
+        config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?
+    );
+
+    // Locate the ramdisk for this device's system image
+    // avd_name format: enmulator_{id}
+    let avd_dir = store.devices_dir.join(&dev.id);
+    let config_ini = avd_dir.join("config.ini");
+
+    // Read the system image path from config.ini
+    let ini_content = std::fs::read_to_string(&config_ini)
+        .map_err(|e| format!("Cannot read config.ini: {}", e))?;
+
+    let image_sysdir = ini_content.lines()
+        .find(|l| l.starts_with("image.sysdir.1="))
+        .and_then(|l| l.strip_prefix("image.sysdir.1="))
+        .map(|v| v.trim().to_string())
+        .ok_or("Cannot find system image path in config.ini")?;
+
+    let ramdisk = sdk_path.join(&image_sysdir).join("ramdisk.img");
+    if !ramdisk.exists() {
+        return Err(format!("ramdisk.img not found at: {}", ramdisk.display()));
+    }
+
+    // Locate rootAVD script — platform-specific file
+    #[cfg(target_os = "windows")]
+    let script_name = "rootAVD.bat";
+    #[cfg(not(target_os = "windows"))]
+    let script_name = "rootAVD.sh";
+
+    let res_dir = paths::resource_dir();
+    let exe_dir = std::env::current_exe()
+        .unwrap_or_default()
+        .parent()
+        .unwrap_or(std::path::Path::new("."))
+        .to_path_buf();
+
+    let mut candidates: Vec<PathBuf> = vec![
+        PathBuf::from("../src-tauri/rootAVD").join(script_name), // dev (project root)
+        PathBuf::from("src-tauri/rootAVD").join(script_name),    // dev alt
+        exe_dir.join("rootAVD").join(script_name),
+    ];
+    if let Some(ref rd) = res_dir {
+        candidates.push(rd.join("rootAVD").join(script_name));
+    }
+
+    let rootavd = candidates.iter().find(|p| p.exists())
+        .ok_or_else(|| format!(
+            "{} not found. Candidates checked:\n{}",
+            script_name,
+            candidates.iter().map(|p| format!("  {}", p.display())).collect::<Vec<_>>().join("\n")
+        ))?;
+
+    let rootavd_dir = rootavd.parent().unwrap_or(std::path::Path::new("."));
+    let ramdisk_str = ramdisk.to_str().unwrap_or_default();
+
+    // rootAVD directly patches ramdisk.img in place with Magisk.
+    // The system image is shared — rooting once affects all AVDs using the same image.
+    #[cfg(target_os = "windows")]
+    let output = std::process::Command::new("cmd")
+        .args(["/c", rootavd.to_str().unwrap_or_default()])
+        .arg(ramdisk_str)
+        .current_dir(rootavd_dir)
+        .output()
+        .map_err(|e| format!("rootAVD execution error: {}", e))?;
+
+    #[cfg(not(target_os = "windows"))]
+    let output = std::process::Command::new("bash")
+        .arg(rootavd)
+        .arg(ramdisk_str)
+        .current_dir(rootavd_dir)
+        .output()
+        .map_err(|e| format!("rootAVD execution error: {}", e))?;
+
+    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+    if output.status.success() || stdout.contains("Magisk") || stdout.contains("patched") {
+        Ok(format!(
+            "Magisk installed into ramdisk.img\n\n\
+            Next steps:\n\
+            1. Start this device\n\
+            2. Open the Magisk app → tap Install → Direct Install\n\
+            3. Reboot — device will have full root with su binary\n\n\
+            ⚠️  Note: This system image is shared. Rooting affects all devices using the same image.\n\n\
+            Image: {}",
+            ramdisk.display()
+        ))
+    } else {
+        Err(format!(
+            "rootAVD failed (exit: {:?})\n\nstdout:\n{}\nstderr:\n{}",
+            output.status.code(), stdout, stderr
+        ))
     }
 }
 
 // ── Device Templates ──
 #[tauri::command]
-fn list_device_templates(config: tauri::State<Config>) -> Result<Vec<String>, String> {
+fn list_device_templates(config: tauri::State<Arc<Mutex<Config>>>) -> Result<Vec<String>, String> {
     let sdk_path = PathBuf::from(
-        config.sdk_path.as_ref().ok_or("SDK not configured")?
+        config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?
     );
     sdk::check_sdk_tools(&sdk_path)?;
     avd_manager::list_device_definitions(&sdk_path)
@@ -657,13 +936,13 @@ fn list_device_templates(config: tauri::State<Config>) -> Result<Vec<String>, St
 
 // ── Config ──
 #[tauri::command]
-fn get_config(config: tauri::State<Config>) -> Config {
-    config.inner().clone()
+fn get_config(config: tauri::State<Arc<Mutex<Config>>>) -> Config {
+    config.lock().unwrap().clone()
 }
 
 #[tauri::command]
-fn set_sdk_path(config: tauri::State<Config>, config_path_state: tauri::State<PathBuf>, path: String) -> Result<(), String> {
-    let mut cfg = config.inner().clone();
+fn set_sdk_path(config: tauri::State<Arc<Mutex<Config>>>, config_path_state: tauri::State<PathBuf>, path: String) -> Result<(), String> {
+    let mut cfg = config.lock().unwrap();
     cfg.sdk_path = Some(path);
     config::save(&config_path_state, &cfg);
     Ok(())
@@ -671,7 +950,7 @@ fn set_sdk_path(config: tauri::State<Config>, config_path_state: tauri::State<Pa
 
 #[tauri::command]
 fn update_config(
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     config_path: tauri::State<PathBuf>,
     sdk_path: Option<String>,
     devices_dir: Option<String>,
@@ -682,7 +961,7 @@ fn update_config(
     default_abi: Option<String>,
     default_tag: Option<String>,
 ) -> Result<(), String> {
-    let mut cfg = config.inner().clone();
+    let mut cfg = config.lock().unwrap();
     if let Some(v) = sdk_path { cfg.sdk_path = Some(v); }
     if let Some(v) = devices_dir { cfg.devices_dir = v; }
     if let Some(v) = api_server_port { cfg.api_server_port = v; }
@@ -697,7 +976,7 @@ fn update_config(
 
 #[tauri::command]
 fn bypass_detection(
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     id: String,
 ) -> Result<String, String> {
@@ -705,7 +984,7 @@ fn bypass_detection(
     if dev.status != "running" {
         return Err("Device must be running".into());
     }
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     let serial = format!("emulator-{}", dev.port);
     bypass::bypass_detection(&sdk_path, &serial)
 }
@@ -714,7 +993,7 @@ fn bypass_detection(
 
 #[tauri::command]
 fn install_cert(
-    config: tauri::State<Config>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     id: String,
     cert_path: String,
@@ -723,7 +1002,7 @@ fn install_cert(
     if dev.status != "running" {
         return Err("Device must be running".into());
     }
-    let sdk_path = PathBuf::from(config.sdk_path.as_ref().ok_or("SDK not configured")?);
+    let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     let serial = format!("emulator-{}", dev.port);
     let adb = sdk::get_adb_path(&sdk_path);
 
@@ -760,25 +1039,49 @@ fn install_cert(
         return Err(format!("adb push failed: {}", String::from_utf8_lossy(&push_out.stderr)));
     }
 
-    // 4. Copy cert to /system/etc/security/cacerts/
+    // 4. Compute the subject hash using the device's openssl binary.
+    // Android requires system CA certs to be named <subject_hash_old>.0
+    let hash_cmd = format!(
+        "openssl x509 -subject_hash_old -noout -in /sdcard/{} 2>/dev/null",
+        cert_file
+    );
+    let hash_out = std::process::Command::new(&adb)
+        .args(["-s", &serial, "shell", &hash_cmd])
+        .output()
+        .map_err(|e| format!("hash compute error: {}", e))?;
+    let hash = String::from_utf8_lossy(&hash_out.stdout).trim().to_string();
+
+    // Validate: openssl subject_hash_old produces an 8-char hex string
+    let dest_name = if hash.len() == 8 && hash.chars().all(|c| c.is_ascii_hexdigit()) {
+        format!("{}.0", hash)
+    } else {
+        // openssl not available on device — fall back to original name with a warning
+        eprintln!("Warning: could not compute cert hash (openssl unavailable?). Using original filename — Android may not trust the cert.");
+        cert_file.clone()
+    };
+
+    // 5. Copy to /system/etc/security/cacerts/<hash>.0
     let cp_out = std::process::Command::new(&adb)
-        .args(["-s", &serial, "shell", "cp", &format!("/sdcard/{}", cert_file), &format!("/system/etc/security/cacerts/{}", cert_file)])
+        .args(["-s", &serial, "shell", "cp",
+               &format!("/sdcard/{}", cert_file),
+               &format!("/system/etc/security/cacerts/{}", dest_name)])
         .output()
         .map_err(|e| format!("adb shell cp error: {}", e))?;
     if !cp_out.status.success() {
         return Err(format!("copy cert failed: {}", String::from_utf8_lossy(&cp_out.stderr)));
     }
 
-    // 5. Set permissions 644
+    // 6. Set permissions 644
     let chmod_out = std::process::Command::new(&adb)
-        .args(["-s", &serial, "shell", "chmod", "644", &format!("/system/etc/security/cacerts/{}", cert_file)])
+        .args(["-s", &serial, "shell", "chmod", "644",
+               &format!("/system/etc/security/cacerts/{}", dest_name)])
         .output()
         .map_err(|e| format!("adb shell chmod error: {}", e))?;
     if !chmod_out.status.success() {
         return Err(format!("chmod failed: {}", String::from_utf8_lossy(&chmod_out.stderr)));
     }
 
-    // 6. Remount /system ro
+    // 7. Remount /system ro
     let ro_out = std::process::Command::new(&adb)
         .args(["-s", &serial, "shell", "mount", "-o", "remount,ro", "/system"])
         .output()
@@ -787,12 +1090,12 @@ fn install_cert(
         return Err(format!("remount ro failed: {}", String::from_utf8_lossy(&ro_out.stderr)));
     }
 
-    // 7. Clean up /sdcard/ copy
+    // 8. Clean up /sdcard/ copy
     let _ = std::process::Command::new(&adb)
         .args(["-s", &serial, "shell", "rm", &format!("/sdcard/{}", cert_file)])
         .output();
 
-    Ok(format!("Certificate {} installed to /system/etc/security/cacerts/", cert_file))
+    Ok(format!("Certificate installed as {} in /system/etc/security/cacerts/", dest_name))
 }
 
 fn main() {
@@ -823,15 +1126,28 @@ fn main() {
     let rec_store = Arc::new(RecordingStore::new());
     let proxy_store = Arc::new(ProxyStore::new());
 
+    // Shared mutable config — same Arc used by both the Tauri commands and the REST API
+    let shared_config: Arc<Mutex<Config>> = Arc::new(Mutex::new(cfg));
+
     let api_state = Arc::new(api_server::AppState {
         device_store: store.clone(),
         emulator_store: emu_store.clone(),
-        config: Arc::new(Mutex::new(cfg.clone())),
+        config: shared_config.clone(),
     });
+
+    // Auto-start REST API server if configured
+    {
+        let c = shared_config.lock().unwrap();
+        if c.auto_start_api {
+            let port = c.api_server_port;
+            drop(c);
+            let _ = api_server::start_api_server(api_state.clone(), port);
+        }
+    }
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .manage(cfg)
+        .manage(shared_config)
         .manage(config_path)
         .manage(store)
         .manage(emu_store)
@@ -876,8 +1192,11 @@ fn main() {
             pull_file,
             push_file,
             toggle_root,
+            toggle_writable_system,
+            root_with_magisk,
             bypass_detection,
             install_cert,
+            list_host_files,
         ])
         .run(tauri::generate_context!())
         .expect("error while running enmulator");

@@ -1,0 +1,19 @@
+{
+  "name": "vivo X100",
+  "brand": "vivo",
+  "model": "V2309A",
+  "manufacturer": "vivo",
+  "device": "V2309A",
+  "fingerprint": "vivo/V2309A/V2309A:14/UP1A.231005.007/compile18092601:user/release-keys",
+  "dpi": 452,
+  "resolution_w": 1260,
+  "resolution_h": 2800,
+  "imei": "009535345517870",
+  "imei2": "134899530645211",
+  "meid": "18657203390294",
+  "phone_number": "+905785426311",
+  "sim_operator": "28602",
+  "sim_operator_name": "Vodafone TR",
+  "sim_country": "tr",
+  "sim_serial": "8908684819750953663"
+}

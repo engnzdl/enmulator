@@ -1,0 +1,19 @@
+{
+  "name": "Samsung Galaxy A54 5G",
+  "brand": "samsung",
+  "model": "SM-A546B",
+  "manufacturer": "samsung",
+  "device": "a54x",
+  "fingerprint": "samsung/a54xeea/a54x:14/UP1A.231005.007/A546BXXS5CXJ2:user/release-keys",
+  "dpi": 449,
+  "resolution_w": 1080,
+  "resolution_h": 2340,
+  "imei": "171737327815494",
+  "imei2": "704730041496002",
+  "meid": "02464704964758",
+  "phone_number": "+905890751716",
+  "sim_operator": "28601",
+  "sim_operator_name": "Turkcell",
+  "sim_country": "tr",
+  "sim_serial": "8906141454519677393"
+}

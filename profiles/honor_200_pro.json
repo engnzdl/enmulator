@@ -1,0 +1,19 @@
+{
+  "name": "HONOR 200 Pro",
+  "brand": "HONOR",
+  "model": "ELP-AN00",
+  "manufacturer": "HONOR",
+  "device": "ELLENA",
+  "fingerprint": "HONOR/ELP-AN00/ELLENA:14/HONORELP-AN00/4.1.0.180C00:user/release-keys",
+  "dpi": 452,
+  "resolution_w": 1200,
+  "resolution_h": 2652,
+  "imei": "390839782835796",
+  "imei2": "346626334458259",
+  "meid": "13363878756454",
+  "phone_number": "+905507746941",
+  "sim_operator": "31026",
+  "sim_operator_name": "T-Mobile US",
+  "sim_country": "us",
+  "sim_serial": "8901772215761388024"
+}

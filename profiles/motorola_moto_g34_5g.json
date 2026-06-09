@@ -1,0 +1,19 @@
+{
+  "name": "Motorola Moto G34 5G",
+  "brand": "motorola",
+  "model": "XT2363-2",
+  "manufacturer": "motorola",
+  "device": "fogos",
+  "fingerprint": "motorola/fogos_g/fogos:13/U1TKS33.F33-83/1:user/release-keys",
+  "dpi": 268,
+  "resolution_w": 720,
+  "resolution_h": 1600,
+  "imei": "830906459748335",
+  "imei2": "953075564564929",
+  "meid": "30015946397584",
+  "phone_number": "+905788697189",
+  "sim_operator": "26201",
+  "sim_operator_name": "Telekom DE",
+  "sim_country": "de",
+  "sim_serial": "8901054317894739579"
+}

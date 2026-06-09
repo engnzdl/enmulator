@@ -1,0 +1,19 @@
+{
+  "name": "Lenovo Legion Phone Duel 2 Pro",
+  "brand": "Lenovo",
+  "model": "L70081",
+  "manufacturer": "Lenovo",
+  "device": "L70081",
+  "fingerprint": "Lenovo/L70081_ZUI_ROW/L70081:11/QKQ1.200628.002/L70081_S100005_211025_ROW:user/release-keys",
+  "dpi": 395,
+  "resolution_w": 1080,
+  "resolution_h": 2460,
+  "imei": "915403416458453",
+  "imei2": "176506336877141",
+  "meid": "03631373180045",
+  "phone_number": "+905775087878",
+  "sim_operator": "31026",
+  "sim_operator_name": "T-Mobile US",
+  "sim_country": "us",
+  "sim_serial": "8909042924229266199"
+}
