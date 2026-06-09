@@ -638,10 +638,32 @@ async fn batch_start(
             result.failed.push(BatchFailure { id: id.clone(), error: "Already running".into() });
             continue;
         }
-        match emu_store.start(&sdk_path, &dev.avd_name, false, None) {
+        let profile = dev.fingerprint_profile.as_ref().and_then(|name| {
+            fingerprint::list_profiles(&paths::profiles_dir())
+                .into_iter().find(|p| &p.name == name)
+        });
+        match emu_store.start(&sdk_path, &dev.avd_name, false, profile.as_ref()) {
             Ok(port) => {
                 store.update_port(id, port);
                 store.update_status(id, "running");
+                // Apply identity after boot (fire-and-forget)
+                if let Some(fp) = profile {
+                    let sdk = sdk_path.clone();
+                    let serial = format!("emulator-{}", port);
+                    std::thread::spawn(move || {
+                        let adb = sdk::get_adb_path(&sdk);
+                        for _ in 0..45 {
+                            if let Ok(o) = std::process::Command::new(&adb)
+                                .args(["-s", &serial, "shell", "getprop", "sys.boot_completed"])
+                                .output()
+                            {
+                                if String::from_utf8_lossy(&o.stdout).trim() == "1" { break; }
+                            }
+                            std::thread::sleep(std::time::Duration::from_secs(2));
+                        }
+                        let _ = fingerprint::apply_to_device(&sdk, &serial, &fp);
+                    });
+                }
                 result.success.push(id.clone());
             }
             Err(e) => {
@@ -721,11 +743,17 @@ fn toggle_root(
     
     if dev.root_enabled {
         let adb = sdk::get_adb_path(&sdk_path);
-        let _ = std::process::Command::new(&adb)
+        let out = std::process::Command::new(&adb)
             .args(["-s", &serial, "unroot"])
-            .output();
-        store.set_root(&id, false);
-        Ok("Root disabled".to_string())
+            .output()
+            .map_err(|e| format!("ADB error: {}", e))?;
+        let stdout = String::from_utf8_lossy(&out.stdout);
+        if out.status.success() || stdout.contains("not running as root") || stdout.contains("restarting") {
+            store.set_root(&id, false);
+            Ok("Root disabled".to_string())
+        } else {
+            Err(format!("adb unroot failed: {}", stdout.trim()))
+        }
     } else {
         let adb = sdk::get_adb_path(&sdk_path);
         let output = std::process::Command::new(&adb)
