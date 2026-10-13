@@ -34,7 +34,7 @@
     ],
     "category": "DeveloperTool",
     "shortDescription": "Cross-platform Android Emulator Manager",
-    "longDescription": "Create, manage & spoof Android Virtual Devices with 30 pre-loaded device profiles. Built with Tauri 2 + Rust + React.",
+    "longDescription": "Create, manage & spoof Android Virtual Devices with 66 pre-loaded device profiles. Built with Tauri 2 + React + Rust.",
     "macOS": {
       "minimumSystemVersion": "12.0"
     },
