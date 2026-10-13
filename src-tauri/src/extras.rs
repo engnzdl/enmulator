@@ -2,7 +2,7 @@ use crate::sdk;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-use std::process::{Child, Command, Stdio};
+use std::process::{Child, Stdio};
 use std::sync::Mutex;
 use std::thread;
 use tauri::Emitter;
@@ -26,7 +26,7 @@ pub fn start_recording(sdk_path: &PathBuf, serial: &str, device_id: &str, store:
     let adb = sdk::get_adb_path(sdk_path);
     let remote_path = format!("/sdcard/enm_recording_{}.mp4", device_id);
 
-    let child = Command::new(&adb)
+    let child = sdk::new_command(&adb)
         .args(["-s", serial, "shell", "screenrecord", &remote_path])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -53,7 +53,7 @@ pub fn stop_recording(
     // We do this by finding the screenrecord pid and killing it, since the
     // adb shell forwarding makes it hard to signal the child directly.
     let adb = sdk::get_adb_path(sdk_path);
-    Command::new(&adb)
+    sdk::new_command(&adb)
         .args([
             "-s",
             serial,
@@ -78,7 +78,7 @@ pub fn stop_recording(
     std::fs::create_dir_all(local_dir).map_err(|e| e.to_string())?;
     let local_path = local_dir.join(format!("enm_recording_{}.mp4", device_id));
 
-    let output = Command::new(&adb)
+    let output = sdk::new_command(&adb)
         .args([
             "-s",
             serial,
@@ -94,7 +94,7 @@ pub fn stop_recording(
     }
 
     // Clean up the remote file.
-    let _ = Command::new(&adb)
+    let _ = sdk::new_command(&adb)
         .args(["-s", serial, "shell", "rm", "-f", &remote_path])
         .output();
 
@@ -115,7 +115,7 @@ pub fn sync_clipboard(
 
     match direction {
         "get" => {
-            let output = Command::new(&adb)
+            let output = sdk::new_command(&adb)
                 .args(["-s", serial, "shell", "cmd", "clipboard", "get"])
                 .output()
                 .map_err(|e| format!("ADB error: {}", e))?;
@@ -132,11 +132,11 @@ pub fn sync_clipboard(
             std::fs::write(&tmp_local, content).map_err(|e| format!("Cannot write temp: {}", e))?;
 
             // Push to device, feed into clipboard, then clean up.
-            let _ = Command::new(&adb)
+            let _ = sdk::new_command(&adb)
                 .args(["-s", serial, "push", &tmp_local.to_string_lossy(), "/data/local/tmp/enm_clipboard.txt"])
                 .output();
 
-            let output = Command::new(&adb)
+            let output = sdk::new_command(&adb)
                 .args([
                     "-s",
                     serial,
@@ -146,7 +146,7 @@ pub fn sync_clipboard(
                 .output()
                 .map_err(|e| format!("ADB error: {}", e))?;
 
-            let _ = Command::new(&adb)
+            let _ = sdk::new_command(&adb)
                 .args(["-s", serial, "shell", "rm", "-f", "/data/local/tmp/enm_clipboard.txt"])
                 .output();
 
@@ -168,7 +168,7 @@ pub fn sync_clipboard(
 /// expected by the emulator console command).
 pub fn set_gps(sdk_path: &PathBuf, serial: &str, lat: f64, lon: f64) -> Result<(), String> {
     let adb = sdk::get_adb_path(sdk_path);
-    let output = Command::new(&adb)
+    let output = sdk::new_command(&adb)
         .args([
             "-s",
             serial,
@@ -200,7 +200,7 @@ pub fn stream_logcat(
     let adb = sdk::get_adb_path(sdk_path);
     let serial_owned = serial.to_string();
 
-    let mut child = Command::new(&adb)
+    let mut child = sdk::new_command(&adb)
         .args(["-s", &serial_owned, "logcat"])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

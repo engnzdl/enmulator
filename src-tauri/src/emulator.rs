@@ -2,7 +2,7 @@ use crate::fingerprint::FingerprintProfile;
 use crate::sdk;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::process::{Child, Command};
+use std::process::Child;
 use std::sync::Mutex;
 
 pub struct EmulatorStore {
@@ -39,7 +39,7 @@ impl EmulatorStore {
             current
         };
 
-        let mut cmd = Command::new(&emulator);
+        let mut cmd = sdk::new_command(&emulator);
         cmd.arg("-avd").arg(avd_name).arg("-port").arg(port.to_string());
         if headless { cmd.arg("-no-window"); }
         cmd.arg("-no-boot-anim");
@@ -62,10 +62,10 @@ impl EmulatorStore {
     pub fn stop(&self, sdk_path: &PathBuf, avd_name: &str, port: u16) {
         let adb = sdk::get_adb_path(sdk_path);
         let serial = format!("emulator-{}", port);
-        let _ = Command::new(&adb)
+        let _ = sdk::new_command(&adb)
             .args(["-s", &serial, "emu", "avd", "snapshot", "delete", "default_boot"])
             .output();
-        let _ = Command::new(&adb).args(["-s", &serial, "emu", "kill"]).output();
+        let _ = sdk::new_command(&adb).args(["-s", &serial, "emu", "kill"]).output();
         if let Some(mut child) = self.processes.lock().unwrap().remove(avd_name) {
             let _ = child.kill();
         }
@@ -74,7 +74,7 @@ impl EmulatorStore {
     pub fn is_alive(sdk_path: &PathBuf, port: u16) -> bool {
         let adb = sdk::get_adb_path(sdk_path);
         let serial = format!("emulator-{}", port);
-        if let Ok(output) = Command::new(&adb).args(["devices"]).output() {
+        if let Ok(output) = sdk::new_command(&adb).args(["devices"]).output() {
             let stdout = String::from_utf8_lossy(&output.stdout);
             return stdout.contains(&serial);
         }

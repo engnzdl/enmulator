@@ -40,7 +40,9 @@ pub fn list_profiles(profiles_dir: &PathBuf) -> Vec<FingerprintProfile> {
             let path = entry.path();
             if path.extension().map_or(false, |e| e == "json") {
                 if let Ok(content) = fs::read_to_string(&path) {
-                    if let Ok(p) = serde_json::from_str::<FingerprintProfile>(&content) {
+                    // Strip UTF-8 BOM — Windows tools (PowerShell Out-File, some editors) add it.
+                    let content = content.strip_prefix('\u{FEFF}').unwrap_or(&content);
+                    if let Ok(p) = serde_json::from_str::<FingerprintProfile>(content) {
                         profiles.push(p);
                     }
                 }
@@ -76,8 +78,9 @@ pub fn apply_to_device(
     serial: &str,
     profile: &FingerprintProfile,
 ) -> Result<String, String> {
-    // Restart adbd as root
+    // Restart adbd as root (google_apis images only; Magisk `su` is the fallback)
     let _ = adb_bridge::shell(sdk_path, serial, "root");
+    let use_magisk = adb_bridge::has_magisk(sdk_path, serial);
 
     // (label, prop, value) — only non-empty fields are attempted
     let mut attempts: Vec<(&str, &str, &str)> = Vec::new();
@@ -109,10 +112,35 @@ pub fn apply_to_device(
         attempts.push(("SIM serial", "gsm.sim.serial", profile.sim_serial.as_str()));
     }
 
+    // Magisk resetprop can also override the immutable ro.product.* / ro.build.* props
+    // that plain setprop cannot touch — apply the full fingerprint when available.
+    if use_magisk {
+        if !profile.brand.is_empty() {
+            attempts.push(("Brand", "ro.product.brand", profile.brand.as_str()));
+        }
+        if !profile.model.is_empty() {
+            attempts.push(("Model", "ro.product.model", profile.model.as_str()));
+        }
+        if !profile.manufacturer.is_empty() {
+            attempts.push(("Manufacturer", "ro.product.manufacturer", profile.manufacturer.as_str()));
+        }
+        if !profile.device.is_empty() {
+            attempts.push(("Device", "ro.product.device", profile.device.as_str()));
+        }
+        if !profile.fingerprint.is_empty() {
+            attempts.push(("Fingerprint", "ro.build.fingerprint", profile.fingerprint.as_str()));
+        }
+    }
+
     let mut applied = 0usize;
     let mut failed: Vec<String> = Vec::new();
     for (label, prop, value) in &attempts {
-        match adb_bridge::setprop(sdk_path, serial, prop, value) {
+        let result = if use_magisk {
+            adb_bridge::magisk_resetprop(sdk_path, serial, prop, value)
+        } else {
+            adb_bridge::setprop(sdk_path, serial, prop, value)
+        };
+        match result {
             Ok(()) => applied += 1,
             Err(e) => failed.push(format!("{}: {}", label, e)),
         }

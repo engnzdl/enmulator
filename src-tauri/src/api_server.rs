@@ -84,6 +84,7 @@ async fn create_device(
         None,
         None,
         None,
+        false,
         &state.device_store.devices_dir,
     ) {
         Ok(dev) => {
@@ -289,9 +290,9 @@ async fn logcat_stream(
     // Spawn a blocking thread to run `adb logcat` and forward lines as SSE events.
     std::thread::spawn(move || {
         use std::io::BufRead;
-        use std::process::{Command, Stdio};
+        use std::process::Stdio;
 
-        let mut child = match Command::new(&adb)
+        let mut child = match sdk::new_command(&adb)
             .args(["-s", &serial, "logcat"])
             .stdout(Stdio::piped())
             .stderr(Stdio::null())

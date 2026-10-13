@@ -78,6 +78,7 @@ fn create_device(
     abi: String,
     tag: String,
     fingerprint_profile: Option<String>,
+    hardware_keyboard: Option<bool>,
 ) -> Result<Device, String> {
     let sdk_path = PathBuf::from(
         config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?
@@ -108,6 +109,7 @@ fn create_device(
     let dev = avd_manager::create_avd(
         &sdk_path, &device_id, &name, api_level, &abi, &tag,
         fingerprint_profile, res_w, res_h, dpi,
+        hardware_keyboard.unwrap_or(false),
         &store.devices_dir,
     )?;
     store.insert(dev.clone());
@@ -228,7 +230,7 @@ fn start_device(
             let adb = sdk::get_adb_path(&sdk);
             // Wait for boot (max 90s)
             for _ in 0..45 {
-                if let Ok(output) = std::process::Command::new(&adb)
+                if let Ok(output) = sdk::new_command(&adb)
                     .args(["-s", &serial, "shell", "getprop", "sys.boot_completed"])
                     .output()
                 {
@@ -380,26 +382,35 @@ fn set_device_identity(
     let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
     let serial = format!("emulator-{}", dev.port);
 
-    // Restart adbd as root so setprop works for persist.radio.* / gsm.*
+    // Restart adbd as root (google_apis only); Magisk `su` is the fallback for
+    // Play Store images where `adb root` is refused.
     let _ = adb_bridge::shell(&sdk_path, &serial, "root");
+    let use_magisk = adb_bridge::has_magisk(&sdk_path, &serial);
+    let set_prop = |key: &str, value: &str| -> Result<(), String> {
+        if use_magisk {
+            adb_bridge::magisk_resetprop(&sdk_path, &serial, key, value)
+        } else {
+            adb_bridge::setprop(&sdk_path, &serial, key, value)
+        }
+    };
 
-    if let Some(v) = &imei { adb_bridge::setprop(&sdk_path, &serial, "persist.radio.imei", v)?; }
-    if let Some(v) = &imei2 { adb_bridge::setprop(&sdk_path, &serial, "persist.radio.imei2", v)?; }
-    if let Some(v) = &meid { adb_bridge::setprop(&sdk_path, &serial, "persist.radio.meid", v)?; }
-    if let Some(v) = &phone_number { adb_bridge::setprop(&sdk_path, &serial, "gsm.sim.phone_number", v)?; }
+    if let Some(v) = &imei { set_prop("persist.radio.imei", v)?; }
+    if let Some(v) = &imei2 { set_prop("persist.radio.imei2", v)?; }
+    if let Some(v) = &meid { set_prop("persist.radio.meid", v)?; }
+    if let Some(v) = &phone_number { set_prop("gsm.sim.phone_number", v)?; }
     if let Some(v) = &sim_operator {
-        adb_bridge::setprop(&sdk_path, &serial, "gsm.sim.operator.numeric", v)?;
-        adb_bridge::setprop(&sdk_path, &serial, "gsm.operator.numeric", v)?;
+        set_prop("gsm.sim.operator.numeric", v)?;
+        set_prop("gsm.operator.numeric", v)?;
     }
     if let Some(v) = &sim_operator_name {
-        adb_bridge::setprop(&sdk_path, &serial, "gsm.sim.operator.alpha", v)?;
-        adb_bridge::setprop(&sdk_path, &serial, "gsm.operator.alpha", v)?;
+        set_prop("gsm.sim.operator.alpha", v)?;
+        set_prop("gsm.operator.alpha", v)?;
     }
     if let Some(v) = &sim_country {
-        adb_bridge::setprop(&sdk_path, &serial, "gsm.sim.operator.iso-country", v)?;
-        adb_bridge::setprop(&sdk_path, &serial, "gsm.operator.iso-country", v)?;
+        set_prop("gsm.sim.operator.iso-country", v)?;
+        set_prop("gsm.operator.iso-country", v)?;
     }
-    if let Some(v) = &sim_serial { adb_bridge::setprop(&sdk_path, &serial, "gsm.sim.serial", v)?; }
+    if let Some(v) = &sim_serial { set_prop("gsm.sim.serial", v)?; }
 
     Ok(())
 }
@@ -653,7 +664,7 @@ async fn batch_start(
                     std::thread::spawn(move || {
                         let adb = sdk::get_adb_path(&sdk);
                         for _ in 0..45 {
-                            if let Ok(o) = std::process::Command::new(&adb)
+                            if let Ok(o) = sdk::new_command(&adb)
                                 .args(["-s", &serial, "shell", "getprop", "sys.boot_completed"])
                                 .output()
                             {
@@ -748,9 +759,17 @@ fn set_device_extras(
     let serial = format!("emulator-{}", dev.port);
     let mut applied = vec![];
 
+    let use_magisk = adb_bridge::has_magisk(&sdk_path, &serial);
+    let run = |cmd: &str| -> Result<String, String> {
+        if use_magisk {
+            adb_bridge::su_shell(&sdk_path, &serial, cmd)
+        } else {
+            adb_bridge::shell(&sdk_path, &serial, cmd)
+        }
+    };
+
     if let Some(ref aid) = android_id {
-        adb_bridge::shell(&sdk_path, &serial,
-            &format!("settings put secure android_id {}", aid))?;
+        run(&format!("settings put secure android_id {}", aid))?;
         applied.push(format!("Android ID → {}", aid));
     }
 
@@ -760,26 +779,26 @@ fn set_device_extras(
             "ip link set wlan0 address {mac} 2>/dev/null || ip link set eth0 address {mac}",
             mac = mac
         );
-        adb_bridge::shell(&sdk_path, &serial, &mac_cmd)?;
+        run(&mac_cmd)?;
         applied.push(format!("WiFi MAC → {}", mac));
     }
 
     if let Some(ref tz) = timezone {
-        adb_bridge::shell(&sdk_path, &serial,
-            &format!("settings put global time_zone '{}'", tz))?;
-        let _ = adb_bridge::setprop(&sdk_path, &serial, "persist.sys.timezone", tz);
+        run(&format!("settings put global time_zone '{}'", tz))?;
+        if use_magisk {
+            let _ = adb_bridge::magisk_resetprop(&sdk_path, &serial, "persist.sys.timezone", tz);
+        } else {
+            let _ = adb_bridge::setprop(&sdk_path, &serial, "persist.sys.timezone", tz);
+        }
         applied.push(format!("Timezone → {}", tz));
     }
 
     if let Some(ref loc) = locale {
         // system_locales for API 24+; system locale for older
-        let _ = adb_bridge::shell(&sdk_path, &serial,
-            &format!("settings put system system_locales '{}'", loc));
-        let _ = adb_bridge::shell(&sdk_path, &serial,
-            &format!("settings put system locale '{}'", loc));
+        let _ = run(&format!("settings put system system_locales '{}'", loc));
+        let _ = run(&format!("settings put system locale '{}'", loc));
         // Broadcast locale change so running apps pick it up
-        let _ = adb_bridge::shell(&sdk_path, &serial,
-            "am broadcast -a android.intent.action.LOCALE_CHANGED");
+        let _ = run("am broadcast -a android.intent.action.LOCALE_CHANGED");
         applied.push(format!("Locale → {}", loc));
     }
 
@@ -806,7 +825,7 @@ fn toggle_root(
     
     if dev.root_enabled {
         let adb = sdk::get_adb_path(&sdk_path);
-        let out = std::process::Command::new(&adb)
+        let out = sdk::new_command(&adb)
             .args(["-s", &serial, "unroot"])
             .output()
             .map_err(|e| format!("ADB error: {}", e))?;
@@ -819,7 +838,7 @@ fn toggle_root(
         }
     } else {
         let adb = sdk::get_adb_path(&sdk_path);
-        let output = std::process::Command::new(&adb)
+        let output = sdk::new_command(&adb)
             .args(["-s", &serial, "root"])
             .output()
             .map_err(|e| format!("ADB error: {}", e))?;
@@ -867,14 +886,14 @@ fn toggle_writable_system(
 
     if dev.writable_system {
         // Switch back to read-only
-        let _ = std::process::Command::new(&adb)
+        let _ = sdk::new_command(&adb)
             .args(["-s", &serial, "shell", "mount", "-o", "remount,ro", "/system"])
             .output();
         store.set_writable_system(&id, false);
         Ok("System disk set to read-only".to_string())
     } else {
         // Ensure adb is running as root first
-        let root_out = std::process::Command::new(&adb)
+        let root_out = sdk::new_command(&adb)
             .args(["-s", &serial, "root"])
             .output()
             .map_err(|e| format!("adb root error: {}", e))?;
@@ -892,7 +911,7 @@ fn toggle_writable_system(
         // Wait briefly for adbd to restart as root
         std::thread::sleep(std::time::Duration::from_millis(800));
 
-        let remount_out = std::process::Command::new(&adb)
+        let remount_out = sdk::new_command(&adb)
             .args(["-s", &serial, "remount"])
             .output()
             .map_err(|e| format!("adb remount error: {}", e))?;
@@ -981,8 +1000,10 @@ fn root_with_magisk(
             candidates.iter().map(|p| format!("  {}", p.display())).collect::<Vec<_>>().join("\n")
         ))?;
 
-    // Canonicalize to absolute path — relative paths break when current_dir is set
-    let rootavd_abs = std::fs::canonicalize(rootavd)
+    // Canonicalize to absolute path — relative paths break when current_dir is set.
+    // dunce::canonicalize strips the Windows `\\?\` extended-length prefix that
+    // std::fs::canonicalize adds, which cmd.exe does not understand.
+    let rootavd_abs = dunce::canonicalize(rootavd)
         .unwrap_or_else(|_| rootavd.clone());
     let rootavd_dir = rootavd_abs.parent().unwrap_or(std::path::Path::new("."));
     let ramdisk_str = ramdisk.to_str().unwrap_or_default();
@@ -990,7 +1011,7 @@ fn root_with_magisk(
     // rootAVD directly patches ramdisk.img in place with Magisk.
     // The system image is shared — rooting once affects all AVDs using the same image.
     #[cfg(target_os = "windows")]
-    let output = std::process::Command::new("cmd")
+    let output = sdk::new_command("cmd")
         .args(["/c", rootavd_abs.to_str().unwrap_or_default()])
         .arg(ramdisk_str)
         .current_dir(rootavd_dir)
@@ -998,7 +1019,7 @@ fn root_with_magisk(
         .map_err(|e| format!("rootAVD execution error: {}", e))?;
 
     #[cfg(not(target_os = "windows"))]
-    let output = std::process::Command::new("bash")
+    let output = sdk::new_command("bash")
         .arg(&rootavd_abs)
         .arg(ramdisk_str)
         .current_dir(rootavd_dir)
@@ -1163,7 +1184,7 @@ fn install_cert(
         .ok_or("Invalid cert path")?;
 
     // 1. adb root
-    let root_out = std::process::Command::new(&adb)
+    let root_out = sdk::new_command(&adb)
         .args(["-s", &serial, "root"])
         .output()
         .map_err(|e| format!("adb root error: {}", e))?;
@@ -1172,7 +1193,7 @@ fn install_cert(
     }
 
     // 2. adb remount (makes /system rw)
-    let remount_out = std::process::Command::new(&adb)
+    let remount_out = sdk::new_command(&adb)
         .args(["-s", &serial, "remount"])
         .output()
         .map_err(|e| format!("adb remount error: {}", e))?;
@@ -1181,7 +1202,7 @@ fn install_cert(
     }
 
     // 3. Push cert to /sdcard/
-    let push_out = std::process::Command::new(&adb)
+    let push_out = sdk::new_command(&adb)
         .args(["-s", &serial, "push", &cert_path, &format!("/sdcard/{}", cert_file)])
         .output()
         .map_err(|e| format!("adb push error: {}", e))?;
@@ -1195,7 +1216,7 @@ fn install_cert(
         "openssl x509 -subject_hash_old -noout -in /sdcard/{} 2>/dev/null",
         cert_file
     );
-    let hash_out = std::process::Command::new(&adb)
+    let hash_out = sdk::new_command(&adb)
         .args(["-s", &serial, "shell", &hash_cmd])
         .output()
         .map_err(|e| format!("hash compute error: {}", e))?;
@@ -1211,7 +1232,7 @@ fn install_cert(
     };
 
     // 5. Copy to /system/etc/security/cacerts/<hash>.0
-    let cp_out = std::process::Command::new(&adb)
+    let cp_out = sdk::new_command(&adb)
         .args(["-s", &serial, "shell", "cp",
                &format!("/sdcard/{}", cert_file),
                &format!("/system/etc/security/cacerts/{}", dest_name)])
@@ -1222,7 +1243,7 @@ fn install_cert(
     }
 
     // 6. Set permissions 644
-    let chmod_out = std::process::Command::new(&adb)
+    let chmod_out = sdk::new_command(&adb)
         .args(["-s", &serial, "shell", "chmod", "644",
                &format!("/system/etc/security/cacerts/{}", dest_name)])
         .output()
@@ -1232,7 +1253,7 @@ fn install_cert(
     }
 
     // 7. Remount /system ro
-    let ro_out = std::process::Command::new(&adb)
+    let ro_out = sdk::new_command(&adb)
         .args(["-s", &serial, "shell", "mount", "-o", "remount,ro", "/system"])
         .output()
         .map_err(|e| format!("adb shell mount ro error: {}", e))?;
@@ -1241,7 +1262,7 @@ fn install_cert(
     }
 
     // 8. Clean up /sdcard/ copy
-    let _ = std::process::Command::new(&adb)
+    let _ = sdk::new_command(&adb)
         .args(["-s", &serial, "shell", "rm", &format!("/sdcard/{}", cert_file)])
         .output();
 

@@ -73,6 +73,7 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
   const [apiLevel, setApiLevel] = useState<number | null>(null);
   const [abi, setAbi] = useState('');
   const [tag, setTag] = useState('');
+  const [hardwareKeyboard, setHardwareKeyboard] = useState(true);
 
   // ── UI state ──
   const [loading, setLoading] = useState(false);
@@ -309,6 +310,7 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
         abi,
         tag,
         fingerprintProfile: selectedProfile || null,
+        hardwareKeyboard,
       });
       setName('');
       setSelectedProfile('');
@@ -610,6 +612,18 @@ export default function CreateWizard({ isOpen, onClose, onCreated }: CreateWizar
               </div>
             )}
           </div>
+        )}
+
+        {/* ── Hardware Keyboard toggle ── */}
+        {step === STEPS.length - 1 && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={hardwareKeyboard}
+              onChange={(e) => setHardwareKeyboard(e.target.checked)}
+            />
+            <span>Enable hardware keyboard (use PC keyboard in the emulator)</span>
+          </label>
         )}
 
         {/* ── Navigation Buttons ── */}

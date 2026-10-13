@@ -111,7 +111,7 @@ fn patch_build_prop(sdk_path: &PathBuf, serial: &str) -> Result<usize, String> {
     std::fs::write(&tmp_local, bytes).map_err(|e| e.to_string())?;
 
     // Push to /sdcard/ then copy to /system/build.prop
-    std::process::Command::new(&adb)
+    sdk::new_command(&adb)
         .args(["-s", serial, "push", &tmp_local.to_string_lossy(), "/sdcard/build.prop"])
         .output()
         .map_err(|e| e.to_string())?;

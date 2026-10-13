@@ -107,6 +107,7 @@ pub fn create_avd(
     profile_resolution_w: Option<u16>,
     profile_resolution_h: Option<u16>,
     profile_dpi: Option<u16>,
+    hardware_keyboard: bool,
     devices_dir: &PathBuf,
 ) -> Result<Device, String> {
     let avd_name = format!("enmulator_{}", device_id);
@@ -140,6 +141,9 @@ pub fn create_avd(
     if let (Some(w), Some(h), Some(d)) = (profile_resolution_w, profile_resolution_h, profile_dpi) {
         override_config_ini(&avd_path, w, h, d)?;
     }
+
+    // Enable PC keyboard input in the emulator when requested
+    set_hw_keyboard(&avd_path, hardware_keyboard)?;
 
     Ok(Device {
         id: device_id.to_string(),
@@ -199,6 +203,32 @@ fn override_config_ini(avd_path: &PathBuf, width: u16, height: u16, dpi: u16) ->
         .map_err(|e| format!("Failed to write config.ini: {}", e))?;
 
     Ok(())
+}
+
+/// Set hw.keyboard in the AVD's config.ini (yes = PC keyboard works in the emulator).
+pub fn set_hw_keyboard(avd_path: &PathBuf, enable: bool) -> Result<(), String> {
+    let config_path = avd_path.join("config.ini");
+    let content = fs::read_to_string(&config_path)
+        .map_err(|e| format!("Failed to read config.ini: {}", e))?;
+
+    let value = if enable { "yes" } else { "no" };
+    let mut new_lines: Vec<String> = Vec::new();
+    let mut found = false;
+    for line in content.lines() {
+        if line.starts_with("hw.keyboard") {
+            new_lines.push(format!("hw.keyboard={}", value));
+            found = true;
+        } else {
+            new_lines.push(line.to_string());
+        }
+    }
+    if !found {
+        new_lines.push(format!("hw.keyboard={}", value));
+    }
+
+    let eol = if cfg!(target_os = "windows") { "\r\n" } else { "\n" };
+    fs::write(&config_path, new_lines.join(eol))
+        .map_err(|e| format!("Failed to write config.ini: {}", e))
 }
 
 /// Unregister an AVD from avdmanager. Called before deleting the AVD directory

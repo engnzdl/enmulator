@@ -4,6 +4,23 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use tauri::Emitter;
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
+/// Creates a Command with CREATE_NO_WINDOW on Windows so child processes
+/// (adb, emulator, sdkmanager, …) don't flash a console window on every call.
+#[cfg(target_os = "windows")]
+pub fn new_command(program: impl AsRef<std::ffi::OsStr>) -> Command {
+    let mut c = Command::new(program);
+    c.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    c
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn new_command(program: impl AsRef<std::ffi::OsStr>) -> Command {
+    Command::new(program)
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct SystemImage {
     pub api_level: u8,
@@ -34,17 +51,17 @@ fn avdmanager_bin() -> &'static str { "avdmanager" }
 #[cfg(target_os = "windows")]
 pub fn sdk_command(path: &PathBuf) -> Command {
     if path.to_string_lossy().ends_with(".bat") {
-        let mut c = Command::new("cmd");
+        let mut c = new_command("cmd");
         c.arg("/c").arg(path);
         c
     } else {
-        Command::new(path)
+        new_command(path)
     }
 }
 
 #[cfg(not(target_os = "windows"))]
 pub fn sdk_command(path: &PathBuf) -> Command {
-    Command::new(path)
+    new_command(path)
 }
 
 #[cfg(target_os = "windows")]
