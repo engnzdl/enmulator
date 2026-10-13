@@ -96,11 +96,22 @@ Each profile includes: build fingerprint, device codename, resolution, DPI, **IM
 
 Modelled after MuMuPlayer's Device tab. Available for every device in the right panel:
 
-- **Preset picker** — select brand → model → auto-fills all identity fields from the bundled profile
+- **Preset picker** — select brand → model → auto-fills all identity fields from the bundled profile. Auto-selects current profile on open.
 - **Custom mode** — manually enter any field
 - **IMEI generator** — ↻ button generates a new Luhn-valid 15-digit IMEI
 - **Fields:** IMEI 1 & 2, Phone Number, SIM Operator (code + display name), SIM Country
 - **Apply** — pushes all fields to the running device via `adb root` + `setprop`
+
+### Device Extras (No LSPosed Required)
+
+Additional spoofing via ADB root only — no Xposed/Magisk modules needed:
+
+| Field | Method | Generator |
+|---|---|---|
+| **Android ID** | `settings put secure android_id` | ↻ Random 16-hex |
+| **WiFi MAC** | `ip link set wlan0/eth0 address` | ↻ Locally-administered MAC |
+| **Timezone** | `settings put global time_zone` | Dropdown (14 zones) |
+| **Locale** | `settings put system system_locales` | Dropdown (17 locales) |
 
 ### Root & System Access
 
@@ -118,8 +129,9 @@ Modelled after MuMuPlayer's Device tab. Available for every device in the right 
 - **📁 Files** — dual-pane file explorer (host ↔ device). Browse, upload, download files. Host panel supports full directory navigation.
 - **🔒 ADB Root / 🔓 Unroot** — toggle `adb root` (Google APIs images). Clear error message when image doesn't support it.
 - **💾 System RO / System RW** — toggle `/system` writable (requires ADB root). Runtime only — resets on reboot.
-- **🧲 Magisk Root** — patch the system image's ramdisk.img with Magisk via bundled rootAVD script.
-- **🛡️ Bypass Detection** — set `ro.build.tags`, `ro.secure`, `ro.debuggable` props to production values.
+- **🧲 Magisk Root** — patch the system image's ramdisk.img with Magisk via bundled rootAVD script. Device must be stopped.
+- **📦 Install Magisk App** — installs Magisk Manager APK from bundled Magisk.zip onto running device after root patching.
+- **🛡️ Bypass Detection** — patches `/system/build.prop` directly when System RW is active (`ro.debuggable=0`, `ro.secure=1`, `ro.build.tags=release-keys` etc.). Requires ADB Root + System RW.
 - **ADB Serial** — shows `emulator-{port}` string when device is running for quick `adb -s` access.
 
 ### Per-Device Proxy
@@ -371,10 +383,12 @@ CI builds run automatically on tag push via GitHub Actions (macOS ARM64 + x86_64
 
 ## Roadmap
 
-- [x] Cross-platform build (macOS ARM64 + x86_64, Windows, Linux)
-- [x] Device Identity Panel (brand/model picker, IMEI generator)
-- [x] Magisk Root via bundled rootAVD
+- [x] Cross-platform build (macOS ARM64, Windows, Linux)
+- [x] Device Identity Panel (brand/model picker, IMEI generator, SIM fields)
+- [x] Device Extras (Android ID, WiFi MAC, Timezone, Locale — no LSPosed)
+- [x] Magisk Root via bundled rootAVD + Install Magisk App button
 - [x] Writable System toggle
+- [x] Bypass Detection via build.prop patch
 - [x] 66 device profiles across 16 brands
 - [x] Headless REST API with SSE logcat
 - [x] Dual-pane file explorer
