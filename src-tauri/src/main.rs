@@ -347,7 +347,7 @@ fn apply_profile(
     store: tauri::State<Arc<DeviceStore>>,
     device_id: String,
     profile_name: String,
-) -> Result<(), String> {
+) -> Result<String, String> {
     let dev = store.get(&device_id).ok_or("Device not found")?;
     if dev.status != "running" {
         return Err("Device must be running to apply profile".into());

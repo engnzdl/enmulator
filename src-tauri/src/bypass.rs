@@ -101,7 +101,11 @@ fn patch_build_prop(sdk_path: &PathBuf, serial: &str) -> Result<usize, String> {
     let new_content = new_lines.join("\n");
 
     let adb = sdk::get_adb_path(sdk_path);
-    let tmp_local = std::env::temp_dir().join("enmulator_build.prop");
+    // Unique per-device temp file so concurrent batch bypasses don't collide.
+    let tmp_local = std::env::temp_dir().join(format!(
+        "enmulator_build_{}.prop",
+        serial.replace([':', '/', '\\'], "_")
+    ));
     // Write with explicit Unix LF bytes so Windows doesn't add \r
     let bytes: Vec<u8> = new_content.bytes().collect();
     std::fs::write(&tmp_local, bytes).map_err(|e| e.to_string())?;

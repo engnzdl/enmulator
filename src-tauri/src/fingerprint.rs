@@ -70,48 +70,65 @@ pub fn delete_profile(profiles_dir: &PathBuf, name: &str) -> Result<(), String> 
 
 /// Apply mutable identity properties to a running device (requires root).
 /// ro.product.* properties are immutable (from system image) — NOT applied.
+/// Returns a per-field summary: which props applied and which failed.
 pub fn apply_to_device(
     sdk_path: &PathBuf,
     serial: &str,
     profile: &FingerprintProfile,
-) -> Result<(), String> {
+) -> Result<String, String> {
     // Restart adbd as root
     let _ = adb_bridge::shell(sdk_path, serial, "root");
 
-    // IMEI / MEID
+    // (label, prop, value) — only non-empty fields are attempted
+    let mut attempts: Vec<(&str, &str, &str)> = Vec::new();
     if !profile.imei.is_empty() {
-        let _ = adb_bridge::setprop(sdk_path, serial, "persist.radio.imei", &profile.imei);
+        attempts.push(("IMEI", "persist.radio.imei", profile.imei.as_str()));
     }
     if !profile.imei2.is_empty() {
-        let _ = adb_bridge::setprop(sdk_path, serial, "persist.radio.imei2", &profile.imei2);
+        attempts.push(("IMEI2", "persist.radio.imei2", profile.imei2.as_str()));
     }
     if !profile.meid.is_empty() {
-        let _ = adb_bridge::setprop(sdk_path, serial, "persist.radio.meid", &profile.meid);
+        attempts.push(("MEID", "persist.radio.meid", profile.meid.as_str()));
     }
-
-    // Phone number
     if !profile.phone_number.is_empty() {
-        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.sim.phone_number", &profile.phone_number);
+        attempts.push(("Phone number", "gsm.sim.phone_number", profile.phone_number.as_str()));
     }
-
-    // Operator
     if !profile.sim_operator.is_empty() {
-        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.sim.operator.numeric", &profile.sim_operator);
-        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.operator.numeric", &profile.sim_operator);
+        attempts.push(("Operator numeric", "gsm.sim.operator.numeric", profile.sim_operator.as_str()));
+        attempts.push(("Operator numeric (global)", "gsm.operator.numeric", profile.sim_operator.as_str()));
     }
     if !profile.sim_operator_name.is_empty() {
-        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.sim.operator.alpha", &profile.sim_operator_name);
-        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.operator.alpha", &profile.sim_operator_name);
+        attempts.push(("Operator name", "gsm.sim.operator.alpha", profile.sim_operator_name.as_str()));
+        attempts.push(("Operator name (global)", "gsm.operator.alpha", profile.sim_operator_name.as_str()));
     }
     if !profile.sim_country.is_empty() {
-        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.sim.operator.iso-country", &profile.sim_country);
-        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.operator.iso-country", &profile.sim_country);
+        attempts.push(("SIM country", "gsm.sim.operator.iso-country", profile.sim_country.as_str()));
+        attempts.push(("Operator country", "gsm.operator.iso-country", profile.sim_country.as_str()));
     }
-
-    // SIM serial
     if !profile.sim_serial.is_empty() {
-        let _ = adb_bridge::setprop(sdk_path, serial, "gsm.sim.serial", &profile.sim_serial);
+        attempts.push(("SIM serial", "gsm.sim.serial", profile.sim_serial.as_str()));
     }
 
-    Ok(())
+    let mut applied = 0usize;
+    let mut failed: Vec<String> = Vec::new();
+    for (label, prop, value) in &attempts {
+        match adb_bridge::setprop(sdk_path, serial, prop, value) {
+            Ok(()) => applied += 1,
+            Err(e) => failed.push(format!("{}: {}", label, e)),
+        }
+    }
+
+    if applied == 0 && !failed.is_empty() {
+        return Err(format!("Identity apply failed: {}", failed.join("; ")));
+    }
+    if failed.is_empty() {
+        Ok(format!("Applied {} identity properties", applied))
+    } else {
+        Ok(format!(
+            "Applied {}/{} identity properties. Failed: {}",
+            applied,
+            applied + failed.len(),
+            failed.join("; ")
+        ))
+    }
 }
