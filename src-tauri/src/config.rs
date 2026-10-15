@@ -41,10 +41,26 @@ fn generate_token() -> String {
 
 pub fn load(config_path: &PathBuf) -> Config {
     let mut cfg = if config_path.exists() {
-        fs::read_to_string(config_path)
-            .ok()
-            .and_then(|s| serde_json::from_str(&s).ok())
-            .unwrap_or_default()
+        match fs::read_to_string(config_path) {
+            Ok(s) => match serde_json::from_str(&s) {
+                Ok(cfg) => cfg,
+                Err(e) => {
+                    // Corrupt config — back it up and fall back to defaults rather
+                    // than silently dropping the user's settings.
+                    let backup = config_path.with_extension("json.corrupt");
+                    let _ = fs::copy(config_path, &backup);
+                    eprintln!(
+                        "WARNING: config.json is corrupt ({}). Backed up to {:?}, using defaults.",
+                        e, backup
+                    );
+                    Config::default()
+                }
+            },
+            Err(e) => {
+                eprintln!("WARNING: cannot read config.json ({}). Using defaults.", e);
+                Config::default()
+            }
+        }
     } else {
         Config::default()
     };
