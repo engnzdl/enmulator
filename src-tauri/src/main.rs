@@ -860,7 +860,7 @@ fn toggle_root(
         let err = String::from_utf8_lossy(&output.stderr);
         let combined = format!("{}{}", out, err).to_lowercase();
 
-        if out.contains("already running as root") || output.status.success() {
+        if combined.contains("already running as root") || output.status.success() {
             store.set_root(&id, true);
             Ok("Root enabled (adb root — ADB daemon runs as root)".to_string())
         } else if combined.contains("cannot run as root") || combined.contains("production build") || combined.contains("not allowed") {
