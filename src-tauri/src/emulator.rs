@@ -72,7 +72,11 @@ impl EmulatorStore {
         let serial = format!("emulator-{}", port);
         if let Ok(output) = sdk::new_command(&adb).args(["devices"]).output() {
             let stdout = String::from_utf8_lossy(&output.stdout);
-            return stdout.contains(&serial);
+            // Match "<serial>\tdevice" so offline/unauthorized entries don't count as alive.
+            return stdout.lines().any(|line| {
+                let mut parts = line.split_whitespace();
+                parts.next() == Some(serial.as_str()) && parts.next() == Some("device")
+            });
         }
         false
     }
