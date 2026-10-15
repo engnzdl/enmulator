@@ -146,6 +146,8 @@ Additional spoofing via ADB root only — no Xposed/Magisk modules needed:
 
 Built-in Actix-web server, configurable port (default: 8080). Start from Settings or via `auto_start_api`. All responses are JSON.
 
+> **Auth:** every `/api/*` route requires the header `x-api-token: <token>`. The token is generated on first run and stored in `config.json` → `api_token`; the `start_api_server` command response also prints it. This blocks cross-site (CSRF) requests from arbitrary web pages.
+
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/devices` | List all devices |

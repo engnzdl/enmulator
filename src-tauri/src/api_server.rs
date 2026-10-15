@@ -339,6 +339,7 @@ async fn logcat_stream(
 fn configure_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
+            .guard(actix_web::guard::fn_guard(token_guard))
             .route("/devices", web::post().to(create_device))
             .route("/devices", web::get().to(list_devices))
             .route("/devices/{id}/start", web::post().to(start_device))
@@ -353,6 +354,22 @@ fn configure_routes(cfg: &mut web::ServiceConfig) {
 
 // ── Server lifecycle management ──────────────────────────────────────────────
 
+/// Auth token for the REST API. Populated when the server starts, cleared on stop.
+/// Every /api route is gated on the `x-api-token` header matching this value,
+/// which blocks cross-site (CSRF) requests from arbitrary web pages.
+static API_TOKEN: Mutex<Option<String>> = Mutex::new(None);
+
+fn token_guard(ctx: &actix_web::guard::GuardContext) -> bool {
+    let Ok(guard) = API_TOKEN.lock() else { return false; };
+    let Some(token) = guard.as_deref() else { return true; }; // server not started — allow
+    ctx.head()
+        .headers()
+        .get("x-api-token")
+        .and_then(|v| v.to_str().ok())
+        .map(|v| v == token)
+        .unwrap_or(false)
+}
+
 static SERVER_HANDLE: Mutex<Option<actix_web::dev::ServerHandle>> = Mutex::new(None);
 
 /// Start the REST API server on the given port.  Spawns the server onto a
@@ -362,6 +379,10 @@ pub fn start_api_server(state: Arc<AppState>, port: u16) -> Result<(), String> {
     if guard.is_some() {
         return Err("API server is already running".to_string());
     }
+
+    // Publish the auth token so the route guard can enforce it.
+    let token = state.config.lock().map_err(|e| e.to_string())?.api_token.clone();
+    *API_TOKEN.lock().map_err(|e| e.to_string())? = Some(token);
 
     let server = HttpServer::new(move || {
         App::new()
@@ -391,6 +412,7 @@ pub fn stop_api_server() -> Result<(), String> {
         Some(handle) => {
             let rt = actix_rt::System::new();
             rt.block_on(handle.stop(true));
+            *API_TOKEN.lock().map_err(|e| e.to_string())? = None;
             Ok(())
         }
         None => Err("API server is not running".to_string()),

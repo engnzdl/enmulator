@@ -489,10 +489,14 @@ fn logcat_start(
 #[tauri::command]
 fn start_api_server(
     api_state: tauri::State<Arc<api_server::AppState>>,
+    config: tauri::State<Arc<Mutex<Config>>>,
     port: u16,
 ) -> Result<String, String> {
     api_server::start_api_server(api_state.inner().clone(), port)?;
-    Ok(format!("API server started on port {}", port))
+    let token = config.lock().unwrap().api_token.clone();
+    Ok(format!(
+        "API server started on port {port}.\nAuth header required: x-api-token: {token}"
+    ))
 }
 
 #[tauri::command]

@@ -12,6 +12,8 @@ pub struct Config {
     pub default_api_level: u8,
     pub default_abi: String,
     pub default_tag: String,
+    #[serde(default)]
+    pub api_token: String,
 }
 
 impl Default for Config {
@@ -25,21 +27,33 @@ impl Default for Config {
             default_api_level: 34,
             default_abi: "x86_64".to_string(),
             default_tag: "google_apis".to_string(),
+            api_token: String::new(),
         }
     }
 }
 
+/// Generate a random 64-char hex token for REST API authentication.
+fn generate_token() -> String {
+    use rand::Rng;
+    let bytes: [u8; 32] = rand::thread_rng().gen();
+    bytes.iter().map(|b| format!("{:02x}", b)).collect()
+}
+
 pub fn load(config_path: &PathBuf) -> Config {
-    if config_path.exists() {
+    let mut cfg = if config_path.exists() {
         fs::read_to_string(config_path)
             .ok()
             .and_then(|s| serde_json::from_str(&s).ok())
             .unwrap_or_default()
     } else {
-        let cfg = Config::default();
+        Config::default()
+    };
+    // Backfill a random API token on first run (or for older configs without one)
+    if cfg.api_token.is_empty() {
+        cfg.api_token = generate_token();
         save(config_path, &cfg);
-        cfg
     }
+    cfg
 }
 
 pub fn save(config_path: &PathBuf, config: &Config) {
