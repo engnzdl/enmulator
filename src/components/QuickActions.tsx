@@ -7,8 +7,8 @@ interface Props {
   onOpenFiles?: () => void;
   rootEnabled?: boolean;
   writableSystem?: boolean;
-  onRootToggle?: () => void;
-  onWritableToggle?: () => void;
+  onRootToggle?: () => Promise<boolean>;
+  onWritableToggle?: () => Promise<boolean>;
 }
 
 type ActionState = 'idle' | 'loading' | 'done' | 'error';
@@ -103,10 +103,10 @@ export default function QuickActions({
         {onRootToggle !== undefined && (
           <button
             className={btnClass('root', rootEnabled ? 'recording' : '')}
-            onClick={() => {
+            onClick={async () => {
               mark('root', 'loading');
-              onRootToggle();
-              setTimeout(() => mark('root', 'done'), 2500);
+              const ok = onRootToggle ? await onRootToggle() : false;
+              mark('root', ok ? 'done' : 'error');
             }}
             title={rootEnabled
               ? 'Unroot (adb unroot) — removes root from ADB daemon'
@@ -121,10 +121,10 @@ export default function QuickActions({
         {onWritableToggle !== undefined && (
           <button
             className={btnClass('writable', writableSystem ? 'recording' : '')}
-            onClick={() => {
+            onClick={async () => {
               mark('writable', 'loading');
-              onWritableToggle();
-              setTimeout(() => mark('writable', 'done'), 3000);
+              const ok = onWritableToggle ? await onWritableToggle() : false;
+              mark('writable', ok ? 'done' : 'error');
             }}
             title={writableSystem
               ? 'Switch system disk back to read-only'

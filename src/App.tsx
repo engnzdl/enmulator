@@ -110,22 +110,28 @@ export default function App() {
     }
   };
 
-  const handleRootToggle = async (id: string) => {
+  const handleRootToggle = async (id: string): Promise<boolean> => {
+    let ok = false;
     try {
       await invoke<string>('toggle_root', { id });
+      ok = true;
     } catch (e: any) {
       showError(`Root toggle failed: ${e?.message ?? String(e)}`);
     }
     await loadDevices();
+    return ok;
   };
 
-  const handleWritableToggle = async (id: string) => {
+  const handleWritableToggle = async (id: string): Promise<boolean> => {
+    let ok = false;
     try {
       await invoke<string>('toggle_writable_system', { id });
+      ok = true;
     } catch (e: any) {
       showError(`System disk toggle failed: ${e?.message ?? String(e)}`);
     }
     await loadDevices();
+    return ok;
   };
 
   const handleDropApk = async (id: string, apkPath: string) => {
