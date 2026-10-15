@@ -20,6 +20,17 @@ impl RecordingStore {
     }
 }
 
+/// Tracks in-flight logcat streams keyed by device ID, so they can be killed.
+pub struct LogcatStore {
+    pub children: Mutex<HashMap<String, Child>>,
+}
+
+impl LogcatStore {
+    pub fn new() -> Self {
+        Self { children: Mutex::new(HashMap::new()) }
+    }
+}
+
 /// Spawn `adb shell screenrecord /sdcard/recording.mp4` and save the child
 /// handle so it can be killed later. Returns Ok(()) when the process starts.
 pub fn start_recording(sdk_path: &PathBuf, serial: &str, device_id: &str, store: &RecordingStore) -> Result<(), String> {
@@ -191,12 +202,14 @@ pub fn set_gps(sdk_path: &PathBuf, serial: &str, lat: f64, lon: f64) -> Result<(
 /// Spawn `adb logcat` in a background thread and emit each line as a Tauri
 /// event named `"logcat-line"`.  The payload is `{ serial, line }`.
 ///
-/// The returned `Child` handle can be killed to stop the stream.
+/// The child handle is kept in `store` so `stop_logcat` can kill it.
 pub fn stream_logcat(
     sdk_path: &PathBuf,
     serial: &str,
+    device_id: &str,
+    store: &LogcatStore,
     app_handle: tauri::AppHandle,
-) -> Result<Child, String> {
+) -> Result<(), String> {
     let adb = sdk::get_adb_path(sdk_path);
     let serial_owned = serial.to_string();
 
@@ -227,5 +240,15 @@ pub fn stream_logcat(
         }
     });
 
-    Ok(child)
+    store.children.lock().unwrap().insert(device_id.to_string(), child);
+    Ok(())
+}
+
+/// Stop and reap an in-flight logcat stream for a device.
+pub fn stop_logcat(device_id: &str, store: &LogcatStore) -> Result<(), String> {
+    if let Some(mut child) = store.children.lock().unwrap().remove(device_id) {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+    Ok(())
 }

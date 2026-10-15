@@ -16,7 +16,7 @@ mod paths;
 use config::Config;
 use device::{Device, DeviceStore};
 use emulator::EmulatorStore;
-use extras::RecordingStore;
+use extras::{LogcatStore, RecordingStore};
 use fingerprint::FingerprintProfile;
 use sdk::SystemImage;
 use serde::Serialize;
@@ -477,12 +477,21 @@ fn logcat_start(
     app: tauri::AppHandle,
     config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
+    logcat_store: tauri::State<Arc<LogcatStore>>,
     id: String,
 ) -> Result<(), String> {
     let dev = store.get(&id).ok_or("Device not found")?;
     let serial = format!("emulator-{}", dev.port);
     let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
-    extras::stream_logcat(&sdk_path, &serial, app).map(|_| ())
+    extras::stream_logcat(&sdk_path, &serial, &id, &logcat_store, app)
+}
+
+#[tauri::command]
+fn logcat_stop(
+    logcat_store: tauri::State<Arc<LogcatStore>>,
+    id: String,
+) -> Result<(), String> {
+    extras::stop_logcat(&id, &logcat_store)
 }
 
 // ── API Server ──
@@ -1299,6 +1308,7 @@ fn main() {
     let existing = store.list();
     let emu_store = Arc::new(EmulatorStore::new(&existing));
     let rec_store = Arc::new(RecordingStore::new());
+    let logcat_store = Arc::new(LogcatStore::new());
     let proxy_store = Arc::new(ProxyStore::new());
 
     // Shared mutable config — same Arc used by both the Tauri commands and the REST API
@@ -1327,6 +1337,7 @@ fn main() {
         .manage(store)
         .manage(emu_store)
         .manage(rec_store)
+        .manage(logcat_store)
         .manage(api_state)
         .manage(proxy_store)
         .invoke_handler(tauri::generate_handler![
@@ -1357,6 +1368,7 @@ fn main() {
             clipboard_sync,
             gps_set,
             logcat_start,
+            logcat_stop,
             start_api_server,
             stop_api_server,
             get_config,
