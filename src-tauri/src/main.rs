@@ -34,6 +34,23 @@ struct FileEntry {
     permissions: String,
 }
 
+/// Poll `sys.boot_completed` until the device reports boot completion (max ~90s).
+/// Returns true if the device finished booting.
+fn wait_for_boot(adb: &std::path::Path, serial: &str) -> bool {
+    for _ in 0..45 {
+        if let Ok(output) = sdk::new_command(adb)
+            .args(["-s", serial, "shell", "getprop", "sys.boot_completed"])
+            .output()
+        {
+            if String::from_utf8_lossy(&output.stdout).trim() == "1" {
+                return true;
+            }
+        }
+        std::thread::sleep(std::time::Duration::from_secs(2));
+    }
+    false
+}
+
 // ── SDK ──
 #[tauri::command]
 fn detect_sdk_cmd(config: tauri::State<Arc<Mutex<Config>>>) -> Result<String, String> {
@@ -228,18 +245,7 @@ fn start_device(
         std::thread::spawn(move || {
             let serial = format!("emulator-{}", port);
             let adb = sdk::get_adb_path(&sdk);
-            // Wait for boot (max 90s)
-            for _ in 0..45 {
-                if let Ok(output) = sdk::new_command(&adb)
-                    .args(["-s", &serial, "shell", "getprop", "sys.boot_completed"])
-                    .output()
-                {
-                    if String::from_utf8_lossy(&output.stdout).trim() == "1" {
-                        break;
-                    }
-                }
-                std::thread::sleep(std::time::Duration::from_secs(2));
-            }
+            wait_for_boot(&adb, &serial);
             let _ = fingerprint::apply_to_device(&sdk, &serial, &fp);
         });
     }
@@ -676,15 +682,7 @@ async fn batch_start(
                     let serial = format!("emulator-{}", port);
                     std::thread::spawn(move || {
                         let adb = sdk::get_adb_path(&sdk);
-                        for _ in 0..45 {
-                            if let Ok(o) = sdk::new_command(&adb)
-                                .args(["-s", &serial, "shell", "getprop", "sys.boot_completed"])
-                                .output()
-                            {
-                                if String::from_utf8_lossy(&o.stdout).trim() == "1" { break; }
-                            }
-                            std::thread::sleep(std::time::Duration::from_secs(2));
-                        }
+                        wait_for_boot(&adb, &serial);
                         let _ = fingerprint::apply_to_device(&sdk, &serial, &fp);
                     });
                 }
