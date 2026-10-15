@@ -53,7 +53,10 @@ impl DeviceStore {
 
     fn save_to_disk(&self) {
         let devices = self.devices.lock().unwrap();
-        let json = serde_json::to_string_pretty(&*devices).unwrap();
+        let json = match serde_json::to_string_pretty(&*devices) {
+            Ok(json) => json,
+            Err(_) => return,
+        };
         fs::write(&self.data_path, json).ok();
     }
 
