@@ -31,6 +31,8 @@
 
 <p align="center">Create, manage, and fully customize Android Virtual Devices with a premium desktop UI.<br>Built with Tauri 2 + React + Rust. No Android Studio required.</p>
 
+<p align="center">⭐ <strong>If this is useful, a star helps others find it.</strong> ⭐</p>
+
 > ⚠️ **For authorized use only.** Device fingerprint spoofing and detection bypass are intended for app testing, development, and security research on software you own or are authorized to test. Using these features to evade detection on services you are not authorized to access may violate their terms of service and applicable law. You are responsible for your use.
 
 ---
