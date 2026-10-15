@@ -219,6 +219,7 @@ fn start_device(
     config: tauri::State<Arc<Mutex<Config>>>,
     store: tauri::State<Arc<DeviceStore>>,
     emu_store: tauri::State<Arc<EmulatorStore>>,
+    proxy_store: tauri::State<Arc<ProxyStore>>,
     id: String,
     headless: bool,
 ) -> Result<u16, String> {
@@ -239,14 +240,24 @@ fn start_device(
     store.update_port(&id, port);
     store.update_status(&id, "running");
 
-    // Apply identity (IMEI, operator, phone) after boot via adb root + setprop
-    if let Some(fp) = profile {
+    // Re-apply identity (IMEI, operator, phone) and persisted proxy after boot.
+    let proxy_cfg = proxy_store.get(&id).filter(|p| p.enabled);
+    if profile.is_some() || proxy_cfg.is_some() {
         let sdk = sdk_path.clone();
         std::thread::spawn(move || {
             let serial = format!("emulator-{}", port);
             let adb = sdk::get_adb_path(&sdk);
             wait_for_boot(&adb, &serial);
-            let _ = fingerprint::apply_to_device(&sdk, &serial, &fp);
+            if let Some(fp) = profile {
+                let _ = fingerprint::apply_to_device(&sdk, &serial, &fp);
+            }
+            if let Some(pc) = proxy_cfg {
+                let _ = adb_bridge::shell(
+                    &sdk,
+                    &serial,
+                    &format!("settings put global http_proxy {}:{}", pc.host, pc.port),
+                );
+            }
         });
     }
 
@@ -651,6 +662,7 @@ async fn batch_start(
     config: tauri::State<'_, Arc<Mutex<Config>>>,
     store: tauri::State<'_, Arc<DeviceStore>>,
     emu_store: tauri::State<'_, Arc<EmulatorStore>>,
+    proxy_store: tauri::State<'_, Arc<ProxyStore>>,
     ids: Vec<String>,
 ) -> Result<BatchResult, String> {
     let sdk_path = PathBuf::from(config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?);
@@ -676,14 +688,24 @@ async fn batch_start(
             Ok(port) => {
                 store.update_port(id, port);
                 store.update_status(id, "running");
-                // Apply identity after boot (fire-and-forget)
-                if let Some(fp) = profile {
+                // Re-apply identity and persisted proxy after boot (fire-and-forget)
+                let proxy_cfg = proxy_store.get(id).filter(|p| p.enabled);
+                if profile.is_some() || proxy_cfg.is_some() {
                     let sdk = sdk_path.clone();
                     let serial = format!("emulator-{}", port);
                     std::thread::spawn(move || {
                         let adb = sdk::get_adb_path(&sdk);
                         wait_for_boot(&adb, &serial);
-                        let _ = fingerprint::apply_to_device(&sdk, &serial, &fp);
+                        if let Some(fp) = profile {
+                            let _ = fingerprint::apply_to_device(&sdk, &serial, &fp);
+                        }
+                        if let Some(pc) = proxy_cfg {
+                            let _ = adb_bridge::shell(
+                                &sdk,
+                                &serial,
+                                &format!("settings put global http_proxy {}:{}", pc.host, pc.port),
+                            );
+                        }
                     });
                 }
                 result.success.push(id.clone());
@@ -1307,7 +1329,7 @@ fn main() {
     let emu_store = Arc::new(EmulatorStore::new(&existing));
     let rec_store = Arc::new(RecordingStore::new());
     let logcat_store = Arc::new(LogcatStore::new());
-    let proxy_store = Arc::new(ProxyStore::new());
+    let proxy_store = Arc::new(ProxyStore::new(paths::proxies_file()));
 
     // Shared mutable config — same Arc used by both the Tauri commands and the REST API
     let shared_config: Arc<Mutex<Config>> = Arc::new(Mutex::new(cfg));

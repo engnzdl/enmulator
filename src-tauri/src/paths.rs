@@ -26,6 +26,12 @@ pub fn config_file() -> PathBuf {
     dir.join("config.json")
 }
 
+pub fn proxies_file() -> PathBuf {
+    let dir = config_dir();
+    std::fs::create_dir_all(&dir).ok();
+    dir.join("proxies.json")
+}
+
 pub fn devices_dir() -> PathBuf {
     let dir = data_dir().join("devices");
     std::fs::create_dir_all(&dir).ok();
