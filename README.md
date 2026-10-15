@@ -425,6 +425,26 @@ cargo build --manifest-path src-tauri/Cargo.toml  # Rust
 
 ---
 
+## Changelog
+
+### v0.2.1 (2026-10-15)
+
+- **Security:** the headless REST API now requires an `x-api-token` header (auto-generated, stored in `config.json` → `api_token`) — blocks cross-site request forgery.
+- **Proxy:** per-device proxy config is persisted to disk and re-applied automatically when a device starts.
+- **Bugfix:** file explorer now parses both toybox ISO (`2024-01-01`) and GNU (`Jan 1`) `ls` date formats.
+- **Bugfix:** device liveness no longer counts `offline`/`unauthorized` ADB entries as running.
+- **Bugfix:** `adb root` detection also checks stderr for "already running as root".
+- **Bugfix:** corrupt `config.json` is backed up (`.corrupt`) instead of being silently reset.
+- **Bugfix:** clipboard sync uses a per-device temp file, so concurrent syncs don't collide.
+- **UX:** root / writable-system toggles reflect the real result instead of an optimistic "done".
+- **Maintenance:** logcat streams are tracked and reaped (`logcat_stop`); removed an unused parameter and a panic path; bundled profiles are detected by content rather than a hardcoded sentinel file.
+
+### v0.2.0
+
+Initial public release — 66 device profiles across 16 brands, Magisk (rootAVD) integration, device identity/extra spoofing, headless REST API, file explorer, and per-device proxy.
+
+---
+
 ## License
 
 GNU General Public License v3.0
