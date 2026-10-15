@@ -100,24 +100,35 @@ pub fn ensure_default_profiles() {
     }
 }
 
+/// True if `dir` exists and contains at least one `.json` profile file.
+fn has_profiles(dir: &std::path::Path) -> bool {
+    std::fs::read_dir(dir)
+        .map(|entries| {
+            entries.flatten().any(|e| {
+                e.path().extension().map_or(false, |ext| ext == "json")
+            })
+        })
+        .unwrap_or(false)
+}
+
 fn find_bundled_profiles() -> Option<PathBuf> {
     // 1. Alongside the exe / in the bundle resource dir (production)
     if let Some(res) = resource_dir() {
         let p = res.join("profiles");
-        if p.join("samsung_s25_ultra.json").exists() {
+        if has_profiles(&p) {
             return Some(p);
         }
     }
 
     // 2. Dev: CWD is src-tauri/ → ../profiles
     let dev1 = PathBuf::from("../profiles");
-    if dev1.join("samsung_s25_ultra.json").exists() {
+    if has_profiles(&dev1) {
         return Some(dev1);
     }
 
     // 3. Dev: CWD is project root → profiles/
     let dev2 = PathBuf::from("profiles");
-    if dev2.join("samsung_s25_ultra.json").exists() {
+    if has_profiles(&dev2) {
         return Some(dev2);
     }
 
