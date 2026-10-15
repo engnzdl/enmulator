@@ -551,19 +551,25 @@ fn list_files(config: tauri::State<Arc<Mutex<Config>>>, store: tauri::State<Arc<
         if line.is_empty() {
             continue;
         }
-        // Parse: drwxr-xr-x  2 root root 4096 2024-01-01 12:00 name
-        // or:     -rw-r--r--  1 root root  123 2024-01-01 12:00 name
+        // Parse: drwxr-xr-x  2 root root 4096 2024-01-01 12:00 name   (toybox ISO date)
+        // or:     -rw-r--r--  1 root root  123 Jan  1 12:00 name      (GNU-style date)
+        // Columns 0-4 are fixed (perms, nlink, owner, group, size); the date is
+        // either 2 fields (ISO) or 3 fields (GNU), so the name column shifts.
         let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.len() < 9 {
+        if parts.len() < 7 {
             continue;
         }
         let perms = parts[0].to_string();
         let is_dir = perms.starts_with('d');
         // Size is the 5th column (0-indexed: 4)
         let size: u64 = parts[4].parse().unwrap_or(0);
-        // Name starts at column 8, but may contain spaces if it's the last field
-        // Reconstruct name from columns 8+ (may contain spaces)
-        let name_raw = parts[8..].join(" ");
+        // ISO date ("2024-01-01") → name starts at column 7; GNU ("Jan") → column 8.
+        let name_start = if parts[5].contains('-') { 7 } else { 8 };
+        if parts.len() <= name_start {
+            continue;
+        }
+        // Name may contain spaces — reconstruct from the remaining columns.
+        let name_raw = parts[name_start..].join(" ");
         // Strip symlink target: "name -> /path/to/target" → "name"
         let name = match name_raw.find(" -> ") {
             Some(idx) => name_raw[..idx].to_string(),
