@@ -139,7 +139,11 @@ pub fn sync_clipboard(
         "set" => {
             let content = text.unwrap_or("");
             // Push clipboard text via a temp file to avoid shell escaping issues.
-            let tmp_local = std::env::temp_dir().join("enm_clipboard.txt");
+            // Unique per-device so concurrent syncs don't collide.
+            let tmp_local = std::env::temp_dir().join(format!(
+                "enm_clipboard_{}.txt",
+                serial.replace([':', '/', '\\'], "_")
+            ));
             std::fs::write(&tmp_local, content).map_err(|e| format!("Cannot write temp: {}", e))?;
 
             // Push to device, feed into clipboard, then clean up.
