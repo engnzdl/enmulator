@@ -218,7 +218,7 @@ fn start_device(
             .find(|p| &p.name == name)
     });
 
-    let port = emu_store.start(&sdk_path, &dev.avd_name, headless, profile.as_ref())?;
+    let port = emu_store.start(&sdk_path, &dev.avd_name, headless)?;
     store.update_port(&id, port);
     store.update_status(&id, "running");
 
@@ -666,7 +666,7 @@ async fn batch_start(
             fingerprint::list_profiles(&paths::profiles_dir())
                 .into_iter().find(|p| &p.name == name)
         });
-        match emu_store.start(&sdk_path, &dev.avd_name, false, profile.as_ref()) {
+        match emu_store.start(&sdk_path, &dev.avd_name, false) {
             Ok(port) => {
                 store.update_port(id, port);
                 store.update_status(id, "running");

@@ -1,4 +1,3 @@
-use crate::fingerprint::FingerprintProfile;
 use crate::sdk;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -29,7 +28,6 @@ impl EmulatorStore {
         sdk_path: &PathBuf,
         avd_name: &str,
         headless: bool,
-        profile: Option<&FingerprintProfile>,
     ) -> Result<u16, String> {
         let emulator = sdk::get_emulator_path(sdk_path);
         let port = {
@@ -51,8 +49,6 @@ impl EmulatorStore {
         if std::path::Path::new("/dev/kvm").exists() {
             cmd.arg("-accel").arg("on");
         }
-
-        let _ = profile;
 
         let child = cmd.spawn().map_err(|e| format!("Failed to start: {}", e))?;
         self.processes.lock().unwrap().insert(avd_name.to_string(), child);
