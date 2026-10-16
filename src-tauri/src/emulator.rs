@@ -43,6 +43,9 @@ impl EmulatorStore {
         cmd.arg("-no-boot-anim");
         cmd.arg("-no-snapshot-save");
         cmd.arg("-no-snapshot-load");
+        // Writable system overlay — required for `adb remount` (overlayfs) so the
+        // identity can be persisted into /system/build.prop across reboots.
+        cmd.arg("-writable-system");
 
         // Enable KVM hardware acceleration on Linux
         #[cfg(target_os = "linux")]
