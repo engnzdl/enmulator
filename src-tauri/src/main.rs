@@ -983,8 +983,8 @@ fn root_with_magisk(
     id: String,
 ) -> Result<String, String> {
     let dev = store.get(&id).ok_or("Device not found")?;
-    if dev.status == "running" {
-        return Err("Stop the device before rooting with Magisk".into());
+    if dev.status != "running" {
+        return Err("Device must be running to root with Magisk (rootAVD needs adb to install Magisk and reboot)".into());
     }
     let sdk_path = PathBuf::from(
         config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?
@@ -1018,6 +1018,10 @@ fn root_with_magisk(
     if !ramdisk.exists() {
         return Err(format!("ramdisk.img not found at: {}", ramdisk.display()));
     }
+
+    // rootAVD expects the path RELATIVE to $ANDROID_HOME (it prepends $ANDROID_HOME
+    // internally). image_sysdir from config.ini is already relative — pass it as-is.
+    let ramdisk_rel = format!("{}ramdisk.img", image_sysdir);
 
     // Locate rootAVD script — platform-specific file
     #[cfg(target_os = "windows")]
@@ -1054,14 +1058,13 @@ fn root_with_magisk(
     let rootavd_abs = dunce::canonicalize(rootavd)
         .unwrap_or_else(|_| rootavd.clone());
     let rootavd_dir = rootavd_abs.parent().unwrap_or(std::path::Path::new("."));
-    let ramdisk_str = ramdisk.to_str().unwrap_or_default();
 
     // rootAVD directly patches ramdisk.img in place with Magisk.
     // The system image is shared — rooting once affects all AVDs using the same image.
     #[cfg(target_os = "windows")]
     let output = sdk::new_command("cmd")
         .args(["/c", rootavd_abs.to_str().unwrap_or_default()])
-        .arg(ramdisk_str)
+        .arg(&ramdisk_rel)
         .current_dir(rootavd_dir)
         .output()
         .map_err(|e| format!("rootAVD execution error: {}", e))?;
@@ -1069,7 +1072,7 @@ fn root_with_magisk(
     #[cfg(not(target_os = "windows"))]
     let output = sdk::new_command("bash")
         .arg(&rootavd_abs)
-        .arg(ramdisk_str)
+        .arg(&ramdisk_rel)
         .current_dir(rootavd_dir)
         .output()
         .map_err(|e| format!("rootAVD execution error: {}", e))?;
@@ -1078,12 +1081,14 @@ fn root_with_magisk(
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
 
     if output.status.success() || stdout.contains("Magisk") || stdout.contains("patched") {
+        // rootAVD shuts the AVD down itself after patching — mark it stopped.
+        store.update_status(&id, "stopped");
         Ok(format!(
             "Magisk patched into ramdisk.img ✓\n\n\
             Next steps:\n\
-            1. Start this device\n\
-            2. Click 'Install Magisk App' in Quick Actions to install the Magisk Manager\n\
-            3. Root is already active — apps can request su\n\n\
+            1. Start this device (cold boot)\n\
+            2. Open the Magisk app once — it may ask 'Requires Additional Setup' (reboot if so)\n\
+            3. Root is active — apps can request su\n\n\
             ⚠️  This system image is shared. All devices using the same image are affected.\n\n\
             Image: {}",
             ramdisk.display()
