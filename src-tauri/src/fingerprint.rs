@@ -134,6 +134,25 @@ pub fn boot_props(profile: &FingerprintProfile) -> Vec<(String, String)> {
     props
 }
 
+/// Map the fingerprint's Android release to its API level (Android 10..15 → 29..35).
+/// Used to keep the system image's API level consistent with the spoofed
+/// fingerprint — a mismatch between SDK_INT and the fingerprint release is a
+/// detection signal, so the image is chosen to match the profile.
+pub fn api_level(profile: &FingerprintProfile) -> Option<u8> {
+    let release = parse_fingerprint(&profile.fingerprint)?.version_release;
+    match release.as_str() {
+        "10" => Some(29),
+        "11" => Some(30),
+        "12" => Some(31),
+        "12L" => Some(32),
+        "13" => Some(33),
+        "14" => Some(34),
+        "15" => Some(35),
+        "16" => Some(36),
+        _ => None,
+    }
+}
+
 /// Persist the full spoofed identity into /system/build.prop so it is present
 /// from first boot on every subsequent launch (no runtime resetprop needed).
 /// Requires a writable /system (`-writable-system` + `adb root` + `adb remount`).

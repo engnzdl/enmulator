@@ -102,17 +102,26 @@ fn create_device(
     );
     sdk::check_sdk_tools(&sdk_path)?;
 
-    // Look up fingerprint profile for resolution/DPI
-    let (res_w, res_h, dpi) = if let Some(ref fp_name) = fingerprint_profile {
+    // Look up fingerprint profile for resolution/DPI + required API level.
+    let (res_w, res_h, dpi, req_api) = if let Some(ref fp_name) = fingerprint_profile {
         let profiles = fingerprint::list_profiles(&paths::profiles_dir());
-        profiles
-            .iter()
-            .find(|p| p.name == *fp_name)
-            .map(|p| (Some(p.resolution_w), Some(p.resolution_h), Some(p.dpi)))
-            .unwrap_or((None, None, None))
+        match profiles.iter().find(|p| p.name == *fp_name) {
+            Some(p) => (
+                Some(p.resolution_w),
+                Some(p.resolution_h),
+                Some(p.dpi),
+                fingerprint::api_level(p),
+            ),
+            None => (None, None, None, None),
+        }
     } else {
-        (None, None, None)
+        (None, None, None, None)
     };
+
+    // Consistency: the fingerprint's release must match the system image's API
+    // level (a mismatch between SDK_INT and the fingerprint release is a tell).
+    // Auto-derive the API level from the profile when available.
+    let api_level = req_api.unwrap_or(api_level);
 
     let device_id = avd_manager::sanitize_id(&name);
     if device_id.is_empty() {
