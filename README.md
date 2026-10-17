@@ -137,6 +137,7 @@ Additional spoofing via ADB root only — no Xposed/Magisk modules needed:
 - **🧲 Magisk Root** — patch the system image's ramdisk.img with Magisk via bundled rootAVD script. Device must be stopped.
 - **📦 Install Magisk App** — installs Magisk Manager APK from bundled Magisk.zip onto running device after root patching.
 - **🕶️ Hide Root** — configure Magisk DenyList (+ Zygisk) and install NoHello to hide root and Zygisk traces from Google Play Services, Play Store, GSF and chosen packages. Reboot required for enforcement.
+- **📸 Screenshot** — capture a PNG screenshot of the running device (saved to the temp dir).
 - **🛡️ Bypass Detection** — patches `/system/build.prop` directly when System RW is active (`ro.debuggable=0`, `ro.secure=1`, `ro.build.tags=release-keys` etc.). Requires ADB Root + System RW.
 - **ADB Serial** — shows `emulator-{port}` string when device is running for quick `adb -s` access.
 
@@ -162,6 +163,14 @@ Built-in Actix-web server, configurable port (default: 8080). Start from Setting
 | `POST` | `/api/devices/{id}/clone` | Clone |
 | `POST` | `/api/devices/{id}/adb` | Run ADB shell command |
 | `GET` | `/api/devices/{id}/logcat` | SSE logcat stream |
+| `POST` | `/api/devices/{id}/identity` | Apply a fingerprint profile (`{profile_name}`) |
+| `POST` | `/api/devices/{id}/install` | Install an APK (`{apk_path}`) |
+| `POST` | `/api/devices/{id}/gps` | Mock GPS (`{lat, lon}`) |
+| `POST` | `/api/devices/{id}/proxy` | Set HTTP proxy (`{host, port, enabled}`) |
+| `POST` | `/api/devices/{id}/hide-root` | Hide root (DenyList + Zygisk + NoHello) |
+| `GET` | `/api/devices/{id}/screenshot` | PNG screenshot (image/png) |
+| `POST` | `/api/devices/{id}/record/start` | Start screen recording |
+| `POST` | `/api/devices/{id}/record/stop` | Stop recording, returns local path |
 | `GET` | `/api/profiles` | List fingerprint profiles |
 
 <details>
@@ -405,11 +414,8 @@ CI builds run automatically on tag push via GitHub Actions (macOS ARM64 + x86_64
 - [x] Headless REST API with SSE logcat
 - [x] Dual-pane file explorer
 - [x] Batch operations
-- [ ] App install automation (batch APK from folder)
-- [ ] Device group presets (save/load sets of devices)
-- [ ] Screenshot capture
-- [ ] Network throttle / latency simulation
-- [ ] More API endpoints (proxy, identity, recording via REST)
+- [x] Screenshot capture (PNG, quick action + REST)
+- [x] Control REST API endpoints (identity, install, GPS, proxy, hide-root, screenshot, recording)
 
 ---
 
@@ -441,6 +447,9 @@ cargo build --manifest-path src-tauri/Cargo.toml  # Rust
 - **Boot-time identity:** the full fingerprint-derived identity (`ro.product.*`, `ro.build.*`, `ro.build.product`, `ro.board.platform`) is now persisted to `/system/build.prop`, so the spoofed device identity survives reboot.
 - **Magisk Root fixes:** rootAVD now correctly requires a running AVD and accepts the relative ramdisk path — the root operation previously failed silently.
 - **API level consistency:** a device's API level is derived from the fingerprint's Android release, so `ro.build.version.sdk` and the fingerprint release always agree.
+- **Screenshot:** new 📸 **Screenshot** quick action + `GET /api/devices/{id}/screenshot` — capture a PNG from a running device.
+- **REST API control endpoints:** `identity` (apply fingerprint profile), `install` (APK), `gps` (mock location), `proxy` (per-device HTTP proxy), `hide-root`, and `record/start` + `record/stop` — the API can now drive the spoofing features, not just device lifecycle.
+- **Screen recording fix:** recordings now write to `/data/local/tmp` instead of `/sdcard` (where `screenrecord` is blocked by SELinux on AVDs).
 
 ### v0.2.1 (2026-10-15)
 

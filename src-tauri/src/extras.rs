@@ -35,7 +35,7 @@ impl LogcatStore {
 /// handle so it can be killed later. Returns Ok(()) when the process starts.
 pub fn start_recording(sdk_path: &PathBuf, serial: &str, device_id: &str, store: &RecordingStore) -> Result<(), String> {
     let adb = sdk::get_adb_path(sdk_path);
-    let remote_path = format!("/sdcard/enm_recording_{}.mp4", device_id);
+    let remote_path = format!("/data/local/tmp/enm_recording_{}.mp4", device_id);
 
     let child = sdk::new_command(&adb)
         .args(["-s", serial, "shell", "screenrecord", &remote_path])
@@ -58,7 +58,7 @@ pub fn stop_recording(
     store: &RecordingStore,
     local_dir: &PathBuf,
 ) -> Result<PathBuf, String> {
-    let remote_path = format!("/sdcard/enm_recording_{}.mp4", device_id);
+    let remote_path = format!("/data/local/tmp/enm_recording_{}.mp4", device_id);
 
     // Kill the screenrecord process on-device by sending SIGINT via adb.
     // We do this by finding the screenrecord pid and killing it, since the
@@ -72,7 +72,7 @@ pub fn stop_recording(
             "pkill",
             "-INT",
             "-f",
-            "screenrecord /sdcard/enm_recording_",
+            "screenrecord /data/local/tmp/enm_recording_",
         ])
         .output()
         .map_err(|e| format!("Failed to stop screenrecord: {}", e))?;

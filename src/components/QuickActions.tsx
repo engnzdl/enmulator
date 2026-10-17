@@ -162,6 +162,15 @@ export default function QuickActions({
           <span className="qa-btn-icon">🕶️</span> Hide Root
         </button>
 
+        {/* Screenshot */}
+        <button
+          className={btnClass('screenshot')}
+          onClick={() => act('screenshot', 'take_screenshot')}
+          title="Capture a screenshot of the running device (saved to temp dir)"
+        >
+          <span className="qa-btn-icon">📸</span> Screenshot
+        </button>
+
         {/* Emulator Detection Bypass */}
         <button
           className={btnClass('bypass')}

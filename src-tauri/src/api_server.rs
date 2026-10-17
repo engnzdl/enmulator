@@ -3,9 +3,11 @@ use crate::avd_manager;
 use crate::config::Config;
 use crate::device::{Device, DeviceStore};
 use crate::emulator::EmulatorStore;
+use crate::extras::{self, RecordingStore};
 use crate::fingerprint;
 use crate::paths;
 use crate::sdk;
+use crate::set_proxy::{ProxyConfig, ProxyStore};
 
 use actix_web::{web, App, HttpResponse, HttpServer};
 use bytes::Bytes;
@@ -23,6 +25,8 @@ pub struct AppState {
     pub device_store: Arc<DeviceStore>,
     pub emulator_store: Arc<EmulatorStore>,
     pub config: Arc<Mutex<Config>>,
+    pub proxy_store: Arc<ProxyStore>,
+    pub rec_store: Arc<RecordingStore>,
 }
 
 // ── Request / Response types ─────────────────────────────────────────────────
@@ -334,6 +338,239 @@ async fn logcat_stream(
         .streaming(MpscStream { rx })
 }
 
+// ── Control endpoints (identity, install, gps, proxy, hide-root, screenshot, record) ──
+
+fn sdk_path_of(state: &AppState) -> Result<PathBuf, String> {
+    match state.config.lock().unwrap().sdk_path.clone() {
+        Some(p) => Ok(PathBuf::from(p)),
+        None => Err("SDK not configured".into()),
+    }
+}
+
+fn resolve_serial(state: &AppState, id: &str) -> Result<String, String> {
+    let dev = state.device_store.get(id).ok_or("Device not found")?;
+    if dev.status != "running" {
+        return Err("Device must be running".into());
+    }
+    Ok(format!("emulator-{}", dev.port))
+}
+
+#[derive(Deserialize)]
+struct IdentityRequest {
+    profile_name: String,
+}
+
+#[derive(Deserialize)]
+struct InstallRequest {
+    apk_path: String,
+}
+
+#[derive(Deserialize)]
+struct GpsRequest {
+    lat: f64,
+    lon: f64,
+}
+
+#[derive(Deserialize)]
+struct ProxyRequest {
+    host: String,
+    port: u16,
+    enabled: bool,
+}
+
+#[derive(Deserialize)]
+struct HideRootRequest {
+    #[serde(default)]
+    packages: Vec<String>,
+}
+
+// POST /api/devices/{id}/identity — apply a fingerprint profile
+async fn apply_identity(
+    state: web::Data<AppState>,
+    path: web::Path<String>,
+    body: web::Json<IdentityRequest>,
+) -> HttpResponse {
+    let id = path.into_inner();
+    let sdk_path = match sdk_path_of(&state) {
+        Ok(p) => p,
+        Err(e) => return err(&e),
+    };
+    let serial = match resolve_serial(&state, &id) {
+        Ok(s) => s,
+        Err(e) => return err(&e),
+    };
+    let profiles = fingerprint::list_profiles(&paths::profiles_dir());
+    let profile = match profiles.into_iter().find(|p| p.name == body.profile_name) {
+        Some(p) => p,
+        None => return not_found("Profile not found"),
+    };
+    match fingerprint::apply_to_device(&sdk_path, &serial, &profile) {
+        Ok(summary) => ok_json(serde_json::json!({ "summary": summary })),
+        Err(e) => err(&e),
+    }
+}
+
+// POST /api/devices/{id}/install — install an APK
+async fn install_apk(
+    state: web::Data<AppState>,
+    path: web::Path<String>,
+    body: web::Json<InstallRequest>,
+) -> HttpResponse {
+    let id = path.into_inner();
+    let sdk_path = match sdk_path_of(&state) {
+        Ok(p) => p,
+        Err(e) => return err(&e),
+    };
+    let serial = match resolve_serial(&state, &id) {
+        Ok(s) => s,
+        Err(e) => return err(&e),
+    };
+    match adb_bridge::install_apk(&sdk_path, &serial, &body.apk_path) {
+        Ok(out) => ok_json(serde_json::json!({ "output": out })),
+        Err(e) => err(&e),
+    }
+}
+
+// POST /api/devices/{id}/gps — mock GPS location
+async fn gps_set(
+    state: web::Data<AppState>,
+    path: web::Path<String>,
+    body: web::Json<GpsRequest>,
+) -> HttpResponse {
+    let id = path.into_inner();
+    let sdk_path = match sdk_path_of(&state) {
+        Ok(p) => p,
+        Err(e) => return err(&e),
+    };
+    let serial = match resolve_serial(&state, &id) {
+        Ok(s) => s,
+        Err(e) => return err(&e),
+    };
+    match extras::set_gps(&sdk_path, &serial, body.lat, body.lon) {
+        Ok(()) => ok_json(serde_json::json!({ "status": "ok" })),
+        Err(e) => err(&e),
+    }
+}
+
+// POST /api/devices/{id}/proxy — set per-device HTTP proxy
+async fn set_proxy(
+    state: web::Data<AppState>,
+    path: web::Path<String>,
+    body: web::Json<ProxyRequest>,
+) -> HttpResponse {
+    let id = path.into_inner();
+    let sdk_path = match sdk_path_of(&state) {
+        Ok(p) => p,
+        Err(e) => return err(&e),
+    };
+    let serial = match resolve_serial(&state, &id) {
+        Ok(s) => s,
+        Err(e) => return err(&e),
+    };
+    if body.enabled {
+        let cmd = format!("settings put global http_proxy {}:{}", body.host, body.port);
+        if let Err(e) = adb_bridge::shell(&sdk_path, &serial, &cmd) {
+            return err(&e);
+        }
+        state.proxy_store.set(&id, ProxyConfig { host: body.host.clone(), port: body.port, enabled: true });
+    } else {
+        if let Err(e) = adb_bridge::shell(&sdk_path, &serial, "settings put global http_proxy :0") {
+            return err(&e);
+        }
+        state.proxy_store.remove(&id);
+    }
+    ok_json(serde_json::json!({ "status": "ok" }))
+}
+
+// POST /api/devices/{id}/hide-root — Magisk DenyList + Zygisk + NoHello
+async fn hide_root(
+    state: web::Data<AppState>,
+    path: web::Path<String>,
+    body: web::Json<HideRootRequest>,
+) -> HttpResponse {
+    let id = path.into_inner();
+    let sdk_path = match sdk_path_of(&state) {
+        Ok(p) => p,
+        Err(e) => return err(&e),
+    };
+    let serial = match resolve_serial(&state, &id) {
+        Ok(s) => s,
+        Err(e) => return err(&e),
+    };
+    match adb_bridge::hide_root_core(&sdk_path, &serial, &body.packages) {
+        Ok(summary) => ok_json(serde_json::json!({ "summary": summary })),
+        Err(e) => err(&e),
+    }
+}
+
+// GET /api/devices/{id}/screenshot — capture a PNG screenshot
+async fn screenshot(
+    state: web::Data<AppState>,
+    path: web::Path<String>,
+) -> HttpResponse {
+    let id = path.into_inner();
+    let sdk_path = match sdk_path_of(&state) {
+        Ok(p) => p,
+        Err(e) => return err(&e),
+    };
+    let serial = match resolve_serial(&state, &id) {
+        Ok(s) => s,
+        Err(e) => return err(&e),
+    };
+    let tmp = std::env::temp_dir().join(format!("enmulator_screenshot_{}.png", id));
+    match adb_bridge::screenshot(&sdk_path, &serial, &tmp.to_string_lossy()) {
+        Ok(()) => match std::fs::read(&tmp) {
+            Ok(bytes) => {
+                let _ = std::fs::remove_file(&tmp);
+                HttpResponse::Ok().content_type("image/png").body(bytes)
+            }
+            Err(e) => err(&e.to_string()),
+        },
+        Err(e) => err(&e),
+    }
+}
+
+// POST /api/devices/{id}/record/start
+async fn record_start(
+    state: web::Data<AppState>,
+    path: web::Path<String>,
+) -> HttpResponse {
+    let id = path.into_inner();
+    let sdk_path = match sdk_path_of(&state) {
+        Ok(p) => p,
+        Err(e) => return err(&e),
+    };
+    let serial = match resolve_serial(&state, &id) {
+        Ok(s) => s,
+        Err(e) => return err(&e),
+    };
+    match extras::start_recording(&sdk_path, &serial, &id, &state.rec_store) {
+        Ok(()) => ok_json(serde_json::json!({ "status": "recording" })),
+        Err(e) => err(&e),
+    }
+}
+
+// POST /api/devices/{id}/record/stop
+async fn record_stop(
+    state: web::Data<AppState>,
+    path: web::Path<String>,
+) -> HttpResponse {
+    let id = path.into_inner();
+    let sdk_path = match sdk_path_of(&state) {
+        Ok(p) => p,
+        Err(e) => return err(&e),
+    };
+    let serial = match resolve_serial(&state, &id) {
+        Ok(s) => s,
+        Err(e) => return err(&e),
+    };
+    let out_dir = std::env::temp_dir();
+    match extras::stop_recording(&sdk_path, &serial, &id, &state.rec_store, &out_dir) {
+        Ok(local) => ok_json(serde_json::json!({ "path": local.to_string_lossy() })),
+        Err(e) => err(&e),
+    }
+}
+
 // ── Route configuration ──────────────────────────────────────────────────────
 
 fn configure_routes(cfg: &mut web::ServiceConfig) {
@@ -348,6 +585,14 @@ fn configure_routes(cfg: &mut web::ServiceConfig) {
             .route("/devices/{id}/clone", web::post().to(clone_device))
             .route("/devices/{id}/adb", web::post().to(adb_shell))
             .route("/devices/{id}/logcat", web::get().to(logcat_stream))
+            .route("/devices/{id}/identity", web::post().to(apply_identity))
+            .route("/devices/{id}/install", web::post().to(install_apk))
+            .route("/devices/{id}/gps", web::post().to(gps_set))
+            .route("/devices/{id}/proxy", web::post().to(set_proxy))
+            .route("/devices/{id}/hide-root", web::post().to(hide_root))
+            .route("/devices/{id}/screenshot", web::get().to(screenshot))
+            .route("/devices/{id}/record/start", web::post().to(record_start))
+            .route("/devices/{id}/record/stop", web::post().to(record_stop))
             .route("/profiles", web::get().to(list_profiles)),
     );
 }

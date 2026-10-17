@@ -1,4 +1,5 @@
 use crate::sdk;
+use crate::paths;
 use std::path::PathBuf;
 
 pub fn shell(sdk_path: &PathBuf, serial: &str, cmd: &str) -> Result<String, String> {
@@ -87,6 +88,88 @@ pub fn push(sdk_path: &PathBuf, serial: &str, local: &str, remote: &str) -> Resu
     } else {
         Err(String::from_utf8_lossy(&output.stderr).to_string())
     }
+}
+
+/// Capture a PNG screenshot from the device into a local file.
+pub fn screenshot(sdk_path: &PathBuf, serial: &str, local_path: &str) -> Result<(), String> {
+    let adb = sdk::get_adb_path(sdk_path);
+    let output = sdk::new_command(&adb)
+        .args(["-s", serial, "exec-out", "screencap", "-p"])
+        .output()
+        .map_err(|e| format!("ADB error: {}", e))?;
+    if output.status.success() {
+        std::fs::write(local_path, &output.stdout).map_err(|e| e.to_string())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).to_string())
+    }
+}
+
+/// Configure Magisk root hiding end-to-end: enable Zygisk, enable DenyList,
+/// hide root from Google Play Services / Play Store / GSF + the given packages,
+/// and install NoHello (Zygisk trace hiding). A reboot is required afterward.
+pub fn hide_root_core(sdk_path: &PathBuf, serial: &str, packages: &[String]) -> Result<String, String> {
+    if !has_magisk(sdk_path, serial) {
+        return Err("Magisk not detected — root with Magisk first".into());
+    }
+    magisk_enable_zygisk(sdk_path, serial)?;
+    magisk_denylist(sdk_path, serial, "enable")?;
+
+    let mut targets: Vec<(String, String)> = vec![
+        ("com.google.android.gms".to_string(), "com.google.android.gms.unstable".to_string()),
+        ("com.google.android.gms".to_string(), "com.google.android.gms".to_string()),
+        ("com.android.vending".to_string(), "com.android.vending".to_string()),
+        ("com.google.android.gsf".to_string(), "com.google.android.gsf".to_string()),
+    ];
+    for p in packages {
+        let p = p.trim();
+        if !p.is_empty() {
+            targets.push((p.to_string(), p.to_string()));
+        }
+    }
+
+    let mut added = 0usize;
+    for (pkg, proc) in &targets {
+        if magisk_denylist(sdk_path, serial, &format!("add {} {}", pkg, proc)).is_ok() {
+            added += 1;
+        }
+    }
+
+    // NoHello (Zygisk trace hiding) — best-effort.
+    let res_dir = paths::resource_dir();
+    let exe_dir = std::env::current_exe()
+        .unwrap_or_default()
+        .parent()
+        .unwrap_or(std::path::Path::new("."))
+        .to_path_buf();
+    let mut candidates: Vec<PathBuf> = vec![
+        PathBuf::from("../src-tauri/NoHello.zip"),
+        PathBuf::from("src-tauri/NoHello.zip"),
+        exe_dir.join("NoHello.zip"),
+    ];
+    if let Some(ref rd) = res_dir {
+        candidates.push(rd.join("NoHello.zip"));
+    }
+    let nohello_note = match candidates.iter().find(|p| p.exists()) {
+        Some(zip) => {
+            let remote = "/data/local/tmp/NoHello.zip";
+            match push(sdk_path, serial, &zip.to_string_lossy(), remote)
+                .and_then(|_| magisk_install_module(sdk_path, serial, remote))
+            {
+                Ok(_) => "NoHello installed (hides Zygisk traces).".to_string(),
+                Err(e) => format!("NoHello install failed: {}", e),
+            }
+        }
+        None => "NoHello.zip not bundled — plain DenyList only.".to_string(),
+    };
+
+    let ls = magisk_denylist(sdk_path, serial, "ls").unwrap_or_default();
+    Ok(format!(
+        "Root hiding configured — {} denylist targets (Zygisk enabled). {}\n\
+         ⚠️  REBOOT required: Zygisk + DenyList + NoHello take effect on next boot.\n\n{}",
+        added,
+        nohello_note,
+        ls
+    ))
 }
 
 pub fn pull(sdk_path: &PathBuf, serial: &str, remote: &str, local: &str) -> Result<(), String> {

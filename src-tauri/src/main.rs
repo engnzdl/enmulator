@@ -1120,77 +1120,32 @@ fn hide_root(
         config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?
     );
     let serial = format!("emulator-{}", dev.port);
+    adb_bridge::hide_root_core(&sdk_path, &serial, &packages)
+}
 
-    if !adb_bridge::has_magisk(&sdk_path, &serial) {
-        return Err("Magisk not detected — root with Magisk first".into());
+// ── Screenshot ──
+
+#[tauri::command]
+fn take_screenshot(
+    config: tauri::State<Arc<Mutex<Config>>>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+) -> Result<String, String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    if dev.status != "running" {
+        return Err("Device must be running to take a screenshot".into());
     }
-
-    // Enable Zygisk — DenyList enforcement is Zygisk-based and does nothing without it.
-    adb_bridge::magisk_enable_zygisk(&sdk_path, &serial)?;
-
-    // Enable denylist enforcement (hides root from the apps listed below)
-    adb_bridge::magisk_denylist(&sdk_path, &serial, "enable")?;
-
-    // Google detection surface — always hidden. Bank apps query these services
-    // for root/attestation, so hiding from them is the "global" root toggle.
-    let mut targets: Vec<(String, String)> = vec![
-        ("com.google.android.gms".to_string(), "com.google.android.gms.unstable".to_string()),
-        ("com.google.android.gms".to_string(), "com.google.android.gms".to_string()),
-        ("com.android.vending".to_string(), "com.android.vending".to_string()),
-        ("com.google.android.gsf".to_string(), "com.google.android.gsf".to_string()),
-    ];
-    // User-selected apps — one denylist entry per package.
-    for p in &packages {
-        let p = p.trim();
-        if !p.is_empty() {
-            targets.push((p.to_string(), p.to_string()));
-        }
-    }
-
-    let mut added = 0usize;
-    for (pkg, proc) in &targets {
-        if adb_bridge::magisk_denylist(&sdk_path, &serial, &format!("add {} {}", pkg, proc)).is_ok() {
-            added += 1;
-        }
-    }
-
-    // Install NoHello — a Zygisk module that hides Zygisk/Magisk traces from the
-    // denylisted apps, hardening the hide beyond plain DenyList. Best-effort.
-    let res_dir = paths::resource_dir();
-    let exe_dir = std::env::current_exe()
+    let sdk_path = PathBuf::from(
+        config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?
+    );
+    let serial = format!("emulator-{}", dev.port);
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
-        .parent()
-        .unwrap_or(std::path::Path::new("."))
-        .to_path_buf();
-    let mut nohello_candidates: Vec<PathBuf> = vec![
-        PathBuf::from("../src-tauri/NoHello.zip"),
-        PathBuf::from("src-tauri/NoHello.zip"),
-        exe_dir.join("NoHello.zip"),
-    ];
-    if let Some(ref rd) = res_dir {
-        nohello_candidates.push(rd.join("NoHello.zip"));
-    }
-    let nohello_note = match nohello_candidates.iter().find(|p| p.exists()) {
-        Some(zip) => {
-            let remote = "/data/local/tmp/NoHello.zip";
-            match adb_bridge::push(&sdk_path, &serial, &zip.to_string_lossy(), remote)
-                .and_then(|_| adb_bridge::magisk_install_module(&sdk_path, &serial, remote))
-            {
-                Ok(_) => "NoHello installed (hides Zygisk traces).".to_string(),
-                Err(e) => format!("NoHello install failed: {}", e),
-            }
-        }
-        None => "NoHello.zip not bundled — plain DenyList only.".to_string(),
-    };
-
-    let ls = adb_bridge::magisk_denylist(&sdk_path, &serial, "ls").unwrap_or_default();
-    Ok(format!(
-        "Root hiding configured — {} denylist targets (Zygisk enabled). {}\n\
-         ⚠️  REBOOT required: Zygisk + DenyList + NoHello take effect on next boot.\n\n{}",
-        added,
-        nohello_note,
-        ls
-    ))
+        .as_secs();
+    let out = std::env::temp_dir().join(format!("enmulator_{}_{}.png", id, stamp));
+    adb_bridge::screenshot(&sdk_path, &serial, &out.to_string_lossy())?;
+    Ok(out.to_string_lossy().to_string())
 }
 
 // ── Install Magisk Manager APK ──
@@ -1450,6 +1405,8 @@ fn main() {
         device_store: store.clone(),
         emulator_store: emu_store.clone(),
         config: shared_config.clone(),
+        proxy_store: proxy_store.clone(),
+        rec_store: rec_store.clone(),
     });
 
     // Auto-start REST API server if configured
@@ -1516,6 +1473,7 @@ fn main() {
             root_with_magisk,
             install_magisk_apk,
             hide_root,
+            take_screenshot,
             bypass_detection,
             install_cert,
             list_host_files,
