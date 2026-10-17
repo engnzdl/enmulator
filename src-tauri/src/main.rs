@@ -1163,12 +1163,12 @@ fn hide_root(
         .unwrap_or(std::path::Path::new("."))
         .to_path_buf();
     let mut nohello_candidates: Vec<PathBuf> = vec![
-        PathBuf::from("../src-tauri/rootAVD/NoHello.zip"),
-        PathBuf::from("src-tauri/rootAVD/NoHello.zip"),
-        exe_dir.join("rootAVD").join("NoHello.zip"),
+        PathBuf::from("../src-tauri/NoHello.zip"),
+        PathBuf::from("src-tauri/NoHello.zip"),
+        exe_dir.join("NoHello.zip"),
     ];
     if let Some(ref rd) = res_dir {
-        nohello_candidates.push(rd.join("rootAVD").join("NoHello.zip"));
+        nohello_candidates.push(rd.join("NoHello.zip"));
     }
     let nohello_note = match nohello_candidates.iter().find(|p| p.exists()) {
         Some(zip) => {

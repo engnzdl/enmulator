@@ -23,7 +23,8 @@
       "../profiles": "profiles",
       "rootAVD/rootAVD.sh": "rootAVD/rootAVD.sh",
       "rootAVD/rootAVD.bat": "rootAVD/rootAVD.bat",
-      "rootAVD/Magisk.zip": "rootAVD/Magisk.zip"
+      "rootAVD/Magisk.zip": "rootAVD/Magisk.zip",
+      "NoHello.zip": "NoHello.zip"
     },
     "icon": [
       "icons/32x32.png",
