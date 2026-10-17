@@ -104,7 +104,7 @@ Modelled after MuMuPlayer's Device tab. Available for every device in the right 
 - **Custom mode** — manually enter any field
 - **IMEI generator** — ↻ button generates a new Luhn-valid 15-digit IMEI
 - **Fields:** IMEI 1 & 2, Phone Number, SIM Operator (code + display name), SIM Country
-- **Apply** — pushes all fields to the running device via `adb root` + `setprop`
+- **Apply** — pushes all fields to the running device via `adb root` + `setprop`, and persists the `ro.*` identity into `/system/build.prop` so it survives reboot
 
 ### Device Extras (No LSPosed Required)
 
@@ -123,6 +123,7 @@ Additional spoofing via ADB root only — no Xposed/Magisk modules needed:
 |---|---|---|
 | **ADB Root** | `adb root` — restarts adbd as root | `google_apis` (non-Play Store) image |
 | **Magisk Root** | rootAVD patches ramdisk.img with Magisk | Device must be stopped; any image |
+| **Hide Root** | Magisk DenyList + Zygisk — hides root from Google Play Services, Play Store, GSF & chosen apps | Magisk Root; reboot required |
 | **System RO/RW** | `adb root` + `adb remount` toggle | ADB root active; runtime only |
 
 > **Tip:** For apps that require `su` (e.g. testing root-requiring flows), use **Magisk Root**. For quick ADB access, **ADB Root** is sufficient.
@@ -135,6 +136,7 @@ Additional spoofing via ADB root only — no Xposed/Magisk modules needed:
 - **💾 System RO / System RW** — toggle `/system` writable (requires ADB root). Runtime only — resets on reboot.
 - **🧲 Magisk Root** — patch the system image's ramdisk.img with Magisk via bundled rootAVD script. Device must be stopped.
 - **📦 Install Magisk App** — installs Magisk Manager APK from bundled Magisk.zip onto running device after root patching.
+- **🕶️ Hide Root** — configure Magisk DenyList (+ Zygisk) to hide root from Google Play Services, Play Store, GSF and chosen packages. Reboot required for enforcement.
 - **🛡️ Bypass Detection** — patches `/system/build.prop` directly when System RW is active (`ro.debuggable=0`, `ro.secure=1`, `ro.build.tags=release-keys` etc.). Requires ADB Root + System RW.
 - **ADB Serial** — shows `emulator-{port}` string when device is running for quick `adb -s` access.
 
@@ -212,7 +214,7 @@ Configurable via ⚙ gear icon. **Settings take effect immediately** (no restart
 |---|---|
 | **Desktop Shell** | [Tauri 2](https://v2.tauri.app/) (Rust) |
 | **Frontend** | React 18 + TypeScript + Vite 5 |
-| **Backend** | Rust — 13 modules, 43 Tauri IPC commands |
+| **Backend** | Rust — 13 modules, 44 Tauri IPC commands |
 | **REST API** | Actix-web 4 (separate thread, shared state) |
 | **Styling** | CSS custom properties, Inter font, premium dark theme |
 | **Android** | SDK command-line tools (avdmanager, sdkmanager, adb, emulator) |
@@ -222,7 +224,7 @@ Configurable via ⚙ gear icon. **Settings take effect immediately** (no restart
 
 ```
 src-tauri/src/
-├── main.rs          43 Tauri command handlers, batch ops, cert installer
+├── main.rs          44 Tauri command handlers, batch ops, cert installer
 ├── emulator.rs      Process lifecycle, port management (5554+ auto-assign)
 ├── sdk.rs           SDK detection, platform-aware binary names, sdkmanager wrapper
 ├── avd_manager.rs   AVD creation, clone registration, config.ini overrides
@@ -304,7 +306,7 @@ npm run tauri dev
 
 ## Limitations
 
-- **`ro.product.*` properties** (brand, model, manufacturer) are immutable — set by the system image, not the profile. Only mutable props (IMEI, SIM, phone) are applied via `setprop`.
+- **`ro.product.*` / `ro.build.*` identity** is persisted at boot via a `/system/build.prop` patch when System RW is active — the full fingerprint-derived identity (brand, model, manufacturer, device, build id/release/tags, `ro.build.product`, `ro.board.platform`) survives reboot. `ro.hardware` and `ro.kernel.*` remain set by the kernel image (they are not writable from userspace).
 - **`adb root`** only works on `google_apis` (non-Play Store) images. For Play Store images, use **Magisk Root**.
 - **Writable system** (`adb remount`) is runtime-only — changes reset on reboot. Affected by dm-verity on API 29+.
 - **Magisk Root** patches the shared ramdisk.img — all AVDs using the same system image are affected.
@@ -365,6 +367,8 @@ CI builds run automatically on tag push via GitHub Actions (macOS ARM64 + x86_64
 | `toggle_root` | `id` | `String` |
 | `toggle_writable_system` | `id` | `String` |
 | `root_with_magisk` | `id` | `String` |
+| `install_magisk_apk` | `id` | `String` |
+| `hide_root` | `id, packages` | `String` |
 | `bypass_detection` | `id` | `String` |
 | `start_screen_record` | `id` | — |
 | `stop_screen_record` | `id` | `String` (local path) |
@@ -395,6 +399,8 @@ CI builds run automatically on tag push via GitHub Actions (macOS ARM64 + x86_64
 - [x] Magisk Root via bundled rootAVD + Install Magisk App button
 - [x] Writable System toggle
 - [x] Bypass Detection via build.prop patch
+- [x] Boot-time identity persistence (full fingerprint → `ro.*` in build.prop)
+- [x] Root hiding via Magisk DenyList + Zygisk
 - [x] 66 device profiles across 16 brands
 - [x] Headless REST API with SSE logcat
 - [x] Dual-pane file explorer
@@ -428,6 +434,13 @@ cargo build --manifest-path src-tauri/Cargo.toml  # Rust
 ---
 
 ## Changelog
+
+### Unreleased
+
+- **Root hiding:** new 🕶️ **Hide Root** quick action — enables Zygisk + Magisk DenyList to hide root from Google Play Services, Play Store, GSF, and chosen packages (reboot required for enforcement).
+- **Boot-time identity:** the full fingerprint-derived identity (`ro.product.*`, `ro.build.*`, `ro.build.product`, `ro.board.platform`) is now persisted to `/system/build.prop`, so the spoofed device identity survives reboot.
+- **Magisk Root fixes:** rootAVD now correctly requires a running AVD and accepts the relative ramdisk path — the root operation previously failed silently.
+- **API level consistency:** a device's API level is derived from the fingerprint's Android release, so `ro.build.version.sdk` and the fingerprint release always agree.
 
 ### v0.2.1 (2026-10-15)
 
