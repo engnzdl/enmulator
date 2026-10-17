@@ -1125,6 +1125,9 @@ fn hide_root(
         return Err("Magisk not detected — root with Magisk first".into());
     }
 
+    // Enable Zygisk — DenyList enforcement is Zygisk-based and does nothing without it.
+    adb_bridge::magisk_enable_zygisk(&sdk_path, &serial)?;
+
     // Enable denylist enforcement (hides root from the apps listed below)
     adb_bridge::magisk_denylist(&sdk_path, &serial, "enable")?;
 
@@ -1153,7 +1156,8 @@ fn hide_root(
 
     let ls = adb_bridge::magisk_denylist(&sdk_path, &serial, "ls").unwrap_or_default();
     Ok(format!(
-        "Root hiding active — {} denylist targets.\n{}",
+        "Root hiding configured — {} denylist targets (Zygisk enabled).\n\
+         ⚠️  REBOOT required: Zygisk + DenyList take effect on next boot.\n\n{}",
         added,
         ls
     ))

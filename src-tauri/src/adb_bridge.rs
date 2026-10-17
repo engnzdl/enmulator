@@ -39,6 +39,19 @@ pub fn magisk_denylist(sdk_path: &PathBuf, serial: &str, args: &str) -> Result<S
     su_shell(sdk_path, serial, &format!("magisk --denylist {}", args))
 }
 
+/// Enable Zygisk in the Magisk database (DenyList enforcement is Zygisk-based
+/// and does nothing without it). Writes the SQL to a temp script on-device to
+/// avoid nested shell quoting issues with the SQL single quotes.
+pub fn magisk_enable_zygisk(sdk_path: &PathBuf, serial: &str) -> Result<(), String> {
+    let script = "magisk --sqlite \"INSERT OR REPLACE INTO settings (key,value) VALUES ('zygisk',1)\"";
+    let local = std::env::temp_dir().join("enmulator_zygisk.sh");
+    std::fs::write(&local, script).map_err(|e| e.to_string())?;
+    let push_res = push(sdk_path, serial, &local.to_string_lossy(), "/data/local/tmp/enmulator_zygisk.sh");
+    let _ = std::fs::remove_file(&local);
+    push_res?;
+    su_shell(sdk_path, serial, "sh /data/local/tmp/enmulator_zygisk.sh").map(|_| ())
+}
+
 /// Run a command as root via Magisk `su`.
 pub fn su_shell(sdk_path: &PathBuf, serial: &str, cmd: &str) -> Result<String, String> {
     let escaped = cmd.replace('\'', "'\\''");
