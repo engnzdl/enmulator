@@ -102,11 +102,16 @@ fn parse_fingerprint(fp: &str) -> Option<DerivedBuildProps> {
     })
 }
 
-/// Build the full boot-time `ro.*` property list for `emulator -prop` injection.
-/// Only identity properties that do NOT map to hardware HALs are emitted, so the
-/// guest keeps its real SDK/hardware/ABI — spoofing those breaks standard AVDs.
-/// All `ro.build.*` fields are derived from the fingerprint string, so the 66
-/// profile JSONs need no new fields.
+/// Build the full boot-time `ro.*` property list for build.prop persistence.
+/// Identity props only — plus the emulator tells that ARE patchable:
+/// `ro.build.product` (AVD default `emulator64_arm64`) is build.prop-level and
+/// verified to persist across reboot. `ro.board.platform` (AVD leaves it empty)
+/// does NOT stick via build.prop on ranchu images (property context), but the
+/// same list feeds `apply_to_device`'s Magisk resetprop path, which sets it at
+/// runtime. Neither selects the primary HAL variant, so changing them is safe.
+/// NOTE: `ro.hardware` (AVD `ranchu`) is NOT included — it comes from the
+/// kernel cmdline (`androidboot.hardware`) and cannot be overridden via
+/// build.prop or `-qemu -append`; it needs a custom kernel/ramdisk.
 pub fn boot_props(profile: &FingerprintProfile) -> Vec<(String, String)> {
     let mut props: Vec<(String, String)> = Vec::new();
     let mut push = |k: &str, v: &str| {
@@ -120,6 +125,10 @@ pub fn boot_props(profile: &FingerprintProfile) -> Vec<(String, String)> {
     push("ro.product.manufacturer", &profile.manufacturer);
     push("ro.product.device", &profile.device);
     push("ro.build.fingerprint", &profile.fingerprint);
+    push("ro.build.product", &profile.device);
+    // AVD leaves ro.board.platform empty (a tell); real devices always set it.
+    // Use the manufacturer (matches the reference emulator's runtime value).
+    push("ro.board.platform", &profile.manufacturer);
 
     if let Some(d) = parse_fingerprint(&profile.fingerprint) {
         push("ro.product.name", &d.product_name);
