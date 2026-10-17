@@ -400,7 +400,7 @@ CI builds run automatically on tag push via GitHub Actions (macOS ARM64 + x86_64
 - [x] Writable System toggle
 - [x] Bypass Detection via build.prop patch
 - [x] Boot-time identity persistence (full fingerprint → `ro.*` in build.prop)
-- [x] Root hiding via Magisk DenyList + Zygisk
+- [x] Root hiding via Magisk DenyList + Zygisk + NoHello
 - [x] 66 device profiles across 16 brands
 - [x] Headless REST API with SSE logcat
 - [x] Dual-pane file explorer
