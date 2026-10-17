@@ -1154,11 +1154,41 @@ fn hide_root(
         }
     }
 
+    // Install NoHello — a Zygisk module that hides Zygisk/Magisk traces from the
+    // denylisted apps, hardening the hide beyond plain DenyList. Best-effort.
+    let res_dir = paths::resource_dir();
+    let exe_dir = std::env::current_exe()
+        .unwrap_or_default()
+        .parent()
+        .unwrap_or(std::path::Path::new("."))
+        .to_path_buf();
+    let mut nohello_candidates: Vec<PathBuf> = vec![
+        PathBuf::from("../src-tauri/rootAVD/NoHello.zip"),
+        PathBuf::from("src-tauri/rootAVD/NoHello.zip"),
+        exe_dir.join("rootAVD").join("NoHello.zip"),
+    ];
+    if let Some(ref rd) = res_dir {
+        nohello_candidates.push(rd.join("rootAVD").join("NoHello.zip"));
+    }
+    let nohello_note = match nohello_candidates.iter().find(|p| p.exists()) {
+        Some(zip) => {
+            let remote = "/data/local/tmp/NoHello.zip";
+            match adb_bridge::push(&sdk_path, &serial, &zip.to_string_lossy(), remote)
+                .and_then(|_| adb_bridge::magisk_install_module(&sdk_path, &serial, remote))
+            {
+                Ok(_) => "NoHello installed (hides Zygisk traces).".to_string(),
+                Err(e) => format!("NoHello install failed: {}", e),
+            }
+        }
+        None => "NoHello.zip not bundled — plain DenyList only.".to_string(),
+    };
+
     let ls = adb_bridge::magisk_denylist(&sdk_path, &serial, "ls").unwrap_or_default();
     Ok(format!(
-        "Root hiding configured — {} denylist targets (Zygisk enabled).\n\
-         ⚠️  REBOOT required: Zygisk + DenyList take effect on next boot.\n\n{}",
+        "Root hiding configured — {} denylist targets (Zygisk enabled). {}\n\
+         ⚠️  REBOOT required: Zygisk + DenyList + NoHello take effect on next boot.\n\n{}",
         added,
+        nohello_note,
         ls
     ))
 }

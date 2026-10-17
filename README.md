@@ -123,7 +123,7 @@ Additional spoofing via ADB root only — no Xposed/Magisk modules needed:
 |---|---|---|
 | **ADB Root** | `adb root` — restarts adbd as root | `google_apis` (non-Play Store) image |
 | **Magisk Root** | rootAVD patches ramdisk.img with Magisk | Device must be stopped; any image |
-| **Hide Root** | Magisk DenyList + Zygisk — hides root from Google Play Services, Play Store, GSF & chosen apps | Magisk Root; reboot required |
+| **Hide Root** | Magisk DenyList + Zygisk + NoHello — hides root and Zygisk traces from Google Play Services, Play Store, GSF & chosen apps | Magisk Root; reboot required |
 | **System RO/RW** | `adb root` + `adb remount` toggle | ADB root active; runtime only |
 
 > **Tip:** For apps that require `su` (e.g. testing root-requiring flows), use **Magisk Root**. For quick ADB access, **ADB Root** is sufficient.
@@ -136,7 +136,7 @@ Additional spoofing via ADB root only — no Xposed/Magisk modules needed:
 - **💾 System RO / System RW** — toggle `/system` writable (requires ADB root). Runtime only — resets on reboot.
 - **🧲 Magisk Root** — patch the system image's ramdisk.img with Magisk via bundled rootAVD script. Device must be stopped.
 - **📦 Install Magisk App** — installs Magisk Manager APK from bundled Magisk.zip onto running device after root patching.
-- **🕶️ Hide Root** — configure Magisk DenyList (+ Zygisk) to hide root from Google Play Services, Play Store, GSF and chosen packages. Reboot required for enforcement.
+- **🕶️ Hide Root** — configure Magisk DenyList (+ Zygisk) and install NoHello to hide root and Zygisk traces from Google Play Services, Play Store, GSF and chosen packages. Reboot required for enforcement.
 - **🛡️ Bypass Detection** — patches `/system/build.prop` directly when System RW is active (`ro.debuggable=0`, `ro.secure=1`, `ro.build.tags=release-keys` etc.). Requires ADB Root + System RW.
 - **ADB Serial** — shows `emulator-{port}` string when device is running for quick `adb -s` access.
 
@@ -437,7 +437,7 @@ cargo build --manifest-path src-tauri/Cargo.toml  # Rust
 
 ### Unreleased
 
-- **Root hiding:** new 🕶️ **Hide Root** quick action — enables Zygisk + Magisk DenyList to hide root from Google Play Services, Play Store, GSF, and chosen packages (reboot required for enforcement).
+- **Root hiding:** new 🕶️ **Hide Root** quick action — enables Zygisk + Magisk DenyList and installs NoHello to hide root and Zygisk traces from Google Play Services, Play Store, GSF, and chosen packages (reboot required for enforcement).
 - **Boot-time identity:** the full fingerprint-derived identity (`ro.product.*`, `ro.build.*`, `ro.build.product`, `ro.board.platform`) is now persisted to `/system/build.prop`, so the spoofed device identity survives reboot.
 - **Magisk Root fixes:** rootAVD now correctly requires a running AVD and accepts the relative ramdisk path — the root operation previously failed silently.
 - **API level consistency:** a device's API level is derived from the fingerprint's Android release, so `ro.build.version.sdk` and the fingerprint release always agree.

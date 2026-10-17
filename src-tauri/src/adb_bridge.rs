@@ -52,6 +52,11 @@ pub fn magisk_enable_zygisk(sdk_path: &PathBuf, serial: &str) -> Result<(), Stri
     su_shell(sdk_path, serial, "sh /data/local/tmp/enmulator_zygisk.sh").map(|_| ())
 }
 
+/// Install a Magisk module from a zip already pushed to the device.
+pub fn magisk_install_module(sdk_path: &PathBuf, serial: &str, remote_zip: &str) -> Result<String, String> {
+    su_shell(sdk_path, serial, &format!("magisk --install-module {}", remote_zip))
+}
+
 /// Run a command as root via Magisk `su`.
 pub fn su_shell(sdk_path: &PathBuf, serial: &str, cmd: &str) -> Result<String, String> {
     let escaped = cmd.replace('\'', "'\\''");
