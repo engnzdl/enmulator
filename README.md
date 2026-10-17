@@ -299,7 +299,7 @@ npm run tauri dev
 
 | Platform | Notes |
 |---|---|
-| **macOS** | Apple Silicon (ARM64) and Intel (x86_64) builds available. KVM not applicable. |
+| **macOS** | Apple Silicon (ARM64) build available. KVM not applicable. |
 | **Windows** | Requires [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) (pre-installed on Windows 11). HAXM recommended for hardware acceleration. |
 | **Linux** | KVM is auto-enabled when `/dev/kvm` exists. Run `sudo usermod -aG kvm $USER` if needed. |
 
@@ -319,7 +319,7 @@ npm run tauri dev
 - **`adb root`** only works on `google_apis` (non-Play Store) images. For Play Store images, use **Magisk Root**.
 - **Writable system** (`adb remount`) is runtime-only — changes reset on reboot. Affected by dm-verity on API 29+.
 - **Magisk Root** patches the shared ramdisk.img — all AVDs using the same system image are affected.
-- **ARM64 system images** only run natively on Apple Silicon. Use `x86_64` on Intel Macs, Windows, and Linux.
+- **ARM64 system images** only run natively on Apple Silicon. Use `x86_64` on Windows and Linux.
 - **Wayland** — headless mode works everywhere; windowed mode requires XWayland on Wayland-only desktops.
 
 ---
@@ -340,7 +340,7 @@ npm run tauri build
 | **Windows** | `src-tauri/target/release/bundle/msi/Enmulator_*.msi` |
 | **Linux** | `…/deb/enmulator_*.deb` + `…/appimage/*.AppImage` |
 
-CI builds run automatically on tag push via GitHub Actions (macOS ARM64 + x86_64, Windows x64, Linux x64).
+CI builds run automatically on tag push via GitHub Actions (macOS ARM64, Windows x64, Linux x64).
 
 ---
 
