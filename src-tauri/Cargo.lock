@@ -1008,7 +1008,7 @@ dependencies = [
 
 [[package]]
 name = "enmulator"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "actix-rt",
  "actix-web",

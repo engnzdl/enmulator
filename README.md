@@ -441,7 +441,7 @@ cargo build --manifest-path src-tauri/Cargo.toml  # Rust
 
 ## Changelog
 
-### Unreleased
+### v0.3.0 (2026-10-17)
 
 - **Root hiding:** new 🕶️ **Hide Root** quick action — enables Zygisk + Magisk DenyList and installs NoHello to hide root and Zygisk traces from Google Play Services, Play Store, GSF, and chosen packages (reboot required for enforcement).
 - **Boot-time identity:** the full fingerprint-derived identity (`ro.product.*`, `ro.build.*`, `ro.build.product`, `ro.board.platform`) is now persisted to `/system/build.prop`, so the spoofed device identity survives reboot.
