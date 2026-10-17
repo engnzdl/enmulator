@@ -34,6 +34,11 @@ pub fn magisk_resetprop(sdk_path: &PathBuf, serial: &str, key: &str, value: &str
     shell(sdk_path, serial, &format!("su -c 'magisk resetprop {} \"{}\"'", key, v)).map(|_| ())
 }
 
+/// Run a Magisk denylist CLI command (`enable`, `disable`, `add PKG [PROC]`, `ls`, `rm`).
+pub fn magisk_denylist(sdk_path: &PathBuf, serial: &str, args: &str) -> Result<String, String> {
+    su_shell(sdk_path, serial, &format!("magisk --denylist {}", args))
+}
+
 /// Run a command as root via Magisk `su`.
 pub fn su_shell(sdk_path: &PathBuf, serial: &str, cmd: &str) -> Result<String, String> {
     let escaped = cmd.replace('\'', "'\\''");

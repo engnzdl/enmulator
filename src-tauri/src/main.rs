@@ -1101,6 +1101,64 @@ fn root_with_magisk(
     }
 }
 
+// ── Root hiding (Magisk denylist) ──
+
+/// Hide Magisk root from the Google detection surface + target apps via the
+/// Magisk denylist. Requires a running, Magisk-rooted device.
+#[tauri::command]
+fn hide_root(
+    config: tauri::State<Arc<Mutex<Config>>>,
+    store: tauri::State<Arc<DeviceStore>>,
+    id: String,
+    packages: Vec<String>,
+) -> Result<String, String> {
+    let dev = store.get(&id).ok_or("Device not found")?;
+    if dev.status != "running" {
+        return Err("Device must be running to configure root hiding".into());
+    }
+    let sdk_path = PathBuf::from(
+        config.lock().unwrap().sdk_path.as_ref().ok_or("SDK not configured")?
+    );
+    let serial = format!("emulator-{}", dev.port);
+
+    if !adb_bridge::has_magisk(&sdk_path, &serial) {
+        return Err("Magisk not detected — root with Magisk first".into());
+    }
+
+    // Enable denylist enforcement (hides root from the apps listed below)
+    adb_bridge::magisk_denylist(&sdk_path, &serial, "enable")?;
+
+    // Google detection surface — always hidden. Bank apps query these services
+    // for root/attestation, so hiding from them is the "global" root toggle.
+    let mut targets: Vec<(String, String)> = vec![
+        ("com.google.android.gms".to_string(), "com.google.android.gms.unstable".to_string()),
+        ("com.google.android.gms".to_string(), "com.google.android.gms".to_string()),
+        ("com.android.vending".to_string(), "com.android.vending".to_string()),
+        ("com.google.android.gsf".to_string(), "com.google.android.gsf".to_string()),
+    ];
+    // User-selected apps — one denylist entry per package.
+    for p in &packages {
+        let p = p.trim();
+        if !p.is_empty() {
+            targets.push((p.to_string(), p.to_string()));
+        }
+    }
+
+    let mut added = 0usize;
+    for (pkg, proc) in &targets {
+        if adb_bridge::magisk_denylist(&sdk_path, &serial, &format!("add {} {}", pkg, proc)).is_ok() {
+            added += 1;
+        }
+    }
+
+    let ls = adb_bridge::magisk_denylist(&sdk_path, &serial, "ls").unwrap_or_default();
+    Ok(format!(
+        "Root hiding active — {} denylist targets.\n{}",
+        added,
+        ls
+    ))
+}
+
 // ── Install Magisk Manager APK ──
 
 #[tauri::command]
@@ -1423,6 +1481,7 @@ fn main() {
             toggle_writable_system,
             root_with_magisk,
             install_magisk_apk,
+            hide_root,
             bypass_detection,
             install_cert,
             list_host_files,

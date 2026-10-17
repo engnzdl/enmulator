@@ -153,6 +153,15 @@ export default function QuickActions({
           <span className="qa-btn-icon">📦</span> Install Magisk App
         </button>
 
+        {/* Hide Root (Magisk DenyList) */}
+        <button
+          className={btnClass('hide_root')}
+          onClick={() => act('hide_root', 'hide_root', { packages: [] })}
+          title="Hide Magisk root from Google Play Services, Play Store & GSF (Magisk DenyList)"
+        >
+          <span className="qa-btn-icon">🕶️</span> Hide Root
+        </button>
+
         {/* Emulator Detection Bypass */}
         <button
           className={btnClass('bypass')}
